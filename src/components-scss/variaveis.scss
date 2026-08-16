@@ -1,0 +1,98 @@
+// Cores principais
+$color-black: #000000;
+$color-black-soft: #0b0b0d;
+$color-bg-dark: #121115;
+$color-bg-card: #1f1f26;
+$color-bg-panel: rgba(18, 17, 21, 0.96);
+$color-bg-overlay: rgba(9, 9, 12, 0.72);
+$color-gold: #d6b46d;
+$color-gold-soft: #f4df9c;
+$color-gold-border: rgba(212, 175, 55, 0.3);
+$color-white: #ffffff;
+$color-white-soft: rgba(255, 255, 255, 0.76);
+$color-white-muted: rgba(255, 255, 255, 0.62);
+$color-white-border: rgba(255, 255, 255, 0.08);
+$color-purple: #310047;
+
+// Espaçamentos
+$space-xxs: 0.25rem;
+$space-xs: 0.5rem;
+$space-sm: 0.75rem;
+$space-md: 1rem;
+$space-lg: 1.5rem;
+$space-xl: 2rem;
+$space-2xl: 2.5rem;
+$space-3xl: 3rem;
+$espacoEntreContainer: 1rem;
+
+// Fontes
+$font-size-xs: 0.68rem;
+$font-size-sm: 0.72rem;
+$font-size-md: 0.93rem;
+$font-size-lg: 1rem;
+$font-size-xl: 1.5rem;
+$font-size-2xl: 1.8rem;
+$font-size-3xl: 2.2rem;
+$font-size-badge: 0.7rem;
+$letter-spacing-sm: 0.08rem;
+$letter-spacing-md: 0.18rem;
+
+// Radius e sombras
+$radius-sm: 10px;
+$radius-md: 14px;
+$radius-lg: 24px;
+$radius-pill: 999px;
+$shadow-soft: 0px 0px 5px rgb(215, 209, 209);
+$shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
+
+@mixin padraoBotao {
+    padding: 15px;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-soft;
+    border: none;
+}
+
+@mixin corPaginaPadrao {
+    background: $color-black;
+    background: linear-gradient(146deg, rgba(0, 0, 0, 1) 42%, rgba(49, 0, 71, 1) 100%, rgba(0, 0, 0, 1) 77%);
+}
+
+@mixin fonteNomeLoja {
+    font-family: "Cinzel", serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+}
+
+@mixin fontePadraoSite {
+    font-family: "Aboreto", system-ui;
+    font-weight: 700;
+    font-style: normal;
+}
+
+@mixin corModais {
+    background: linear-gradient(145deg, rgba(30, 20, 15, 0.95), rgba(10, 5, 2, 0.95));
+    border: 1px solid $color-gold-border;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+@mixin modalSurface {
+    background: $color-bg-panel;
+    border: 1px solid $color-white-border;
+    box-shadow: $shadow-modal;
+}
+
+@mixin modalTextMuted {
+    color: $color-white-muted;
+}
+
+@mixin modalBadge {
+    padding: 0.45rem 0.8rem;
+    border-radius: $radius-pill;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: $color-white;
+    font-size: $font-size-badge;
+    letter-spacing: $letter-spacing-sm;
+    text-transform: uppercase;
+}
