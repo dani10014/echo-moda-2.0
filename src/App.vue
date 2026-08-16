@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import HeroSection from './components/HeroSection.vue'
+
 </script>
 
 <template>
-  <div class="home-container">
-    <HeroSection />
-  </div>
+  <router-view/>
 </template>
 
 <style lang="scss" scoped>

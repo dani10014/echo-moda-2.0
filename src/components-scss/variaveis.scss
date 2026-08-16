@@ -46,7 +46,7 @@ $shadow-soft: 0px 0px 5px rgb(215, 209, 209);
 $shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
 
 @mixin padraoBotao {
-    padding: 15px;
+    padding: 10px;
     border-radius: $radius-sm;
     box-shadow: $shadow-soft;
     border: none;
