@@ -121,9 +121,9 @@ const abrirModal = (product:produto) =>{
 }
 
 const produtos = [
-    { id: 2, name: 'Jaqueta Jeans Oversized', preco: 'R$ 249,90', imagem:"../assets/images/hero-background.png"},
-    { id: 3, name: 'Calça Alfaiataria', preco: 'R$ 159,90' , imagem:"../assets/images/hero-background.png"},
-    { id: 4, name: 'Vestido Midi Casual', preco: 'R$ 179,90', imagem:"../assets/images/hero-background.png" },
+    { id: 2, name: 'Jaqueta Jeans Oversized', preco: 'R$ 249,90', imagem:"../assets/images/Gemini_Generated_Image_uy7iaguy7iaguy7i.png"},
+    { id: 3, name: 'Calça Alfaiataria', preco: 'R$ 159,90' , imagem:"../assets/images/Gemini_Generated_Image_uy7iaguy7iaguy7i.png"},
+    { id: 4, name: 'Vestido Midi Casual', preco: 'R$ 179,90', imagem:"../assets/images/Gemini_Generated_Image_uy7iaguy7iaguy7i.png" },
 ];
 
 const modules = [Pagination, Navigation];
