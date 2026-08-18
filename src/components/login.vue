@@ -13,11 +13,16 @@
             <div class="card-login">
                 <h2>login</h2>
                 <div class="inputs">
-                    <input type="text" placeholder="Nome">
-                    <input type="text" placeholder="Email">
+                    <input v-model="form.email" type="text" @input="verificaForm()" placeholder="Email">
+                    <span  v-if="resultEmailErro" class="invalido-mensagem">* Email incorreto</span>
+
+                    <input v-model="form.senha" type="text" @input="verificaForm()" placeholder="Senha">
+                    <span v-if="resultSenhaErro" class="invalido-mensagem">* Senha precisa conter 8 caracteres minimo</span>
+
                     <div class="btn-acessar">
                         <button>Entrar</button>
                     </div>
+
                     <p class="texto-ou-logar-google">Ou</p>
                     <div class="container-login-google">
                         <button class="google"></button>
@@ -29,15 +34,41 @@
     </main>
 </template>
 <script setup lang="ts">
+    import { reactive } from 'vue';
     import cabecalho from './cabecalho.vue';
     import { useRouter } from 'vue-router';
+    import {ref} from "vue";
 
     const router  = useRouter();
 
+    let form = reactive({
+        email:"",
+        senha:"",
+    })
+
+    let resultEmailErro = ref(false) ;
+    let resultSenhaErro = ref(false) ;
+    
+    function verificaForm(){
+
+        if(!form.email.trim().includes("@")){
+            resultEmailErro.value = true;
+        }else{
+            resultEmailErro.value = false;
+        }
+        if(form.senha.trim().length < 8){
+            resultSenhaErro.value = true;
+        }else{
+            resultSenhaErro.value = false;
+        }
+    }
+
+    console.log(form)
     const irParaHome = () =>{
         router.push("/");
     }
-
+    
+    
 </script>
 <style lang ="scss" scoped>
 @use "../components-scss/variaveis.scss";
@@ -54,6 +85,7 @@
             object-fit: cover;
             -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 65%, rgba(0, 0, 0, 0) 100%);
                 mask-image: linear-gradient(to bottom , rgba(0, 0, 0, 1) 65%, rgba(0, 0, 0, 0) 100%);
+                filter: brightness(0.5);
         }
     }
     .container-base-card{
@@ -65,10 +97,14 @@
             @include variaveis.modalTextMuted;
             padding: 0 variaveis.$space-lg;
             height: 450px;
-            width: 50%;
+            width: 70%;
             position: absolute;
-            top: 100px;
+            top: 200px;
             border-radius: 10px;
+            @media(min-width:750px){
+                top: 100px;
+                width: 50%;
+            }
             h2{
                 text-align: center;
                 @include variaveis.fontePadraoSite;
@@ -77,9 +113,12 @@
                 display: flex;
                 flex-direction: column;
                 justify-self: center;
-                margin: 2rem variaveis.$space-3xl;
+                margin: 2rem variaveis.$space-sm;
                 gap:10px;
                 transition: alll 0.3s ease-in-out;
+                @media(min-width:750px){
+                    margin: 2rem variaveis.$space-3xl;
+                }
                 input{
                     padding: variaveis.$space-md;
                     border-radius: 10px;
@@ -87,6 +126,11 @@
                     &:focus{
                         outline:2px solid rgba(117, 90, 0, 1) ;
                     }
+                }
+                .invalido-mensagem{
+                    color: red;
+                    font-size: variaveis.$font-size-sm;
+                    
                 }
                 .btn-acessar{
                     display: flex;
