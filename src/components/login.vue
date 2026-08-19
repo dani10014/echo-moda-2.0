@@ -11,13 +11,17 @@
         </div>
         <div class="container-base-card">
             <div class="card-login">
-                <h2>login</h2>
+                <button v-if="esqueciSenha === true " class="voltar-login" @click="voltarLogin">Voltar</button>
+                <h2 v-if="esqueciSenha === false ">login</h2>
+                <h2 v-if="esqueciSenha === true ">Email para recuperação</h2>
                 <div class="inputs">
-                    <input v-model="form.email" type="text" @input="verificaForm()" placeholder="Email">
-                    <span  v-if="resultEmailErro" class="invalido-mensagem">* Email incorreto</span>
+                    <input v-model="form.email" type="text" @input="validarEmail()" placeholder="Email">
+                    <span  v-if="resultEmailErro === true" class="invalido-mensagem">* Email incorreto</span>
 
-                    <input v-model="form.senha" type="text" @input="verificaForm()" placeholder="Senha">
-                    <span v-if="resultSenhaErro" class="invalido-mensagem">* Senha precisa conter 8 caracteres minimo</span>
+                    <input v-if="esqueciSenha === false" v-model="form.senha" type="password" @input="validarSenha()" placeholder="Senha">
+                    <span v-if="resultSenhaErro === true" class="invalido-mensagem">* Senha precisa conter 8 caracteres minimo</span>
+                    
+                    <a href="#" v-if="esqueciSenha === false" @click="esqueciAsenha" class="esqueci-a-senha-btn">Esqueci a senha</a>
 
                     <div class="btn-acessar">
                         <button>Entrar</button>
@@ -34,10 +38,9 @@
     </main>
 </template>
 <script setup lang="ts">
-    import { reactive } from 'vue';
+    import { reactive,ref } from 'vue';
     import cabecalho from './cabecalho.vue';
     import { useRouter } from 'vue-router';
-    import {ref} from "vue";
 
     const router  = useRouter();
 
@@ -48,21 +51,25 @@
 
     let resultEmailErro = ref(false) ;
     let resultSenhaErro = ref(false) ;
-    
-    function verificaForm(){
+    let esqueciSenha = ref(false);
 
-        if(!form.email.trim().includes("@")){
-            resultEmailErro.value = true;
-        }else{
-            resultEmailErro.value = false;
-        }
-        if(form.senha.trim().length < 8){
-            resultSenhaErro.value = true;
-        }else{
-            resultSenhaErro.value = false;
-        }
+    const validarEmail = () => {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        resultEmailErro.value = !regex.test(form.email);
     }
 
+    const validarSenha = () => {
+        resultSenhaErro.value = form.senha.trim().length < 8; 
+    }
+    
+    const esqueciAsenha = () =>{
+        esqueciSenha.value = true
+    }
+
+    const voltarLogin = () =>{
+        esqueciSenha.value = false
+    }
+    
     console.log(form)
     const irParaHome = () =>{
         router.push("/");
@@ -101,6 +108,10 @@
             position: absolute;
             top: 200px;
             border-radius: 10px;
+            .voltar-login{
+                @include variaveis.padraoBotao;
+                margin-top: variaveis.$space-sm;
+            }
             @media(min-width:750px){
                 top: 100px;
                 width: 50%;
@@ -144,6 +155,10 @@
                         border-radius: 10px;
                         border: none;
                     }
+                }
+                .esqueci-a-senha-btn{
+                    text-align: start;
+                    font-size: variaveis.$font-size-sm;
                 }
                 .texto-ou-logar-google{
                     text-align: center;
