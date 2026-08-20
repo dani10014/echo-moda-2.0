@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import CardProduto from './card-produto.vue'
+import Loading from "./loading.vue";
 import Cabecalho from './cabecalho.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';

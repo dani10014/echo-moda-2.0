@@ -23,7 +23,7 @@
                     
                     <a href="#" v-if="esqueciSenha === false" @click="esqueciAsenha" class="esqueci-a-senha-btn">Esqueci a senha</a>
 
-                    <div class="btn-acessar">
+                    <div @click="Logar" class="btn-acessar">
                         <button>Entrar</button>
                     </div>
 
@@ -33,6 +33,9 @@
                         <button class="facebook"></button>
                     </div>
                 </div>
+                <div v-if="dadosCorretos === true" class="container-loading">
+                        <loading/>
+                </div>
             </div>
         </div>
     </main>
@@ -40,6 +43,7 @@
 <script setup lang="ts">
     import { reactive,ref } from 'vue';
     import cabecalho from './cabecalho.vue';
+    import Loading from "./loading.vue";
     import { useRouter } from 'vue-router';
 
     const router  = useRouter();
@@ -48,13 +52,15 @@
         email:"",
         senha:"",
     })
+    
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     let resultEmailErro = ref(false) ;
     let resultSenhaErro = ref(false) ;
     let esqueciSenha = ref(false);
+    let dadosCorretos = ref(false);
 
     const validarEmail = () => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         resultEmailErro.value = !regex.test(form.email);
     }
 
@@ -68,6 +74,38 @@
 
     const voltarLogin = () =>{
         esqueciSenha.value = false
+    } 
+
+    const Logar = async () =>{
+        if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email) && resultSenhaErro.value === false && form.senha.trim().length >= 8 ){
+            dadosCorretos.value = true;
+            const nome = "Dijalma Duarte";
+
+            try{
+                const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/verificar-cadastro",{
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        nome:nome,
+                        email:form.email,
+                        senha:form.senha,
+                    })
+                })
+
+                if(resposta.status === 200){
+                    alert("Tudo certo");
+                }
+                if(resposta.status === 400){
+                    alert("Errod")
+                }
+            }catch(erro){
+                alert("Algo deu errado com o server");
+            }finally{
+                dadosCorretos.value = false
+            }
+        }else{
+            alert("Dados imcopletos")
+        }
     }
     
     console.log(form)
@@ -102,12 +140,12 @@
             background-color: #fff;
             @include variaveis.modalSurface;
             @include variaveis.modalTextMuted;
-            padding: 0 variaveis.$space-lg;
             height: 450px;
             width: 70%;
             position: absolute;
             top: 200px;
             border-radius: 10px;
+            padding: variaveis.$space-md;
             .voltar-login{
                 @include variaveis.padraoBotao;
                 margin-top: variaveis.$space-sm;
@@ -119,6 +157,17 @@
             h2{
                 text-align: center;
                 @include variaveis.fontePadraoSite;
+            }
+            .container-loading{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: absolute;
+                z-index: 1000;
+                width: 100%;
+                background-color: rgba(0, 0, 0, 0.734);
+                top: 0;
+                height: 100%;
             }
             .inputs{
                 display: flex;
