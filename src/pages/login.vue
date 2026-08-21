@@ -176,6 +176,7 @@
             position: absolute;
             top: 200px;
             border-radius: 10px;
+            padding:0 variaveis.$space-md;
             .voltar-login{
                 @include variaveis.padraoBotao;
                 margin-top: variaveis.$space-sm;
@@ -203,7 +204,7 @@
                 display: flex;
                 flex-direction: column;
                 justify-self: center;
-                margin: 2rem variaveis.$space-sm;
+                margin: 2rem variaveis.$space-xs;
                 gap:10px;
                 transition: alll 0.3s ease-in-out;
                 @media(min-width:750px){
