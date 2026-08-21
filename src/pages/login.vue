@@ -204,7 +204,7 @@
                 display: flex;
                 flex-direction: column;
                 justify-self: center;
-                margin: 2rem variaveis.$space-xs;
+                margin: 2rem variaveis.$space-xxs;
                 gap:10px;
                 transition: alll 0.3s ease-in-out;
                 @media(min-width:750px){
