@@ -43,13 +43,18 @@
                 />
             </div>
         </section>
+        <Popup
+            mensagem ="ola"
+        />
     </main>
 </template>
 
 <script setup lang="ts">
-import CardProduto from './card-produto.vue'
-import Loading from "./loading.vue";
-import Cabecalho from './cabecalho.vue';
+import CardProduto from '../components/card-produto.vue'
+import Loading from "../components/loading.vue";
+import Cabecalho from '../components/cabecalho.vue';
+import Popup from '../components/popup.vue';
+
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 

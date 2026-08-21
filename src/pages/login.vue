@@ -23,18 +23,19 @@
                     
                     <a href="#" v-if="esqueciSenha === false" @click="esqueciAsenha" class="esqueci-a-senha-btn">Esqueci a senha</a>
 
-                    <div @click="Logar" class="btn-acessar">
-                        <button>Entrar</button>
+                    <div class="btn-acessar">
+                        <button v-if="esqueciSenha === false" @click="Logar">Entrar</button>
+                        <button v-else @click="Logar">Prosseguir</button>
                     </div>
 
-                    <p class="texto-ou-logar-google">Ou</p>
-                    <div class="container-login-google">
+                    <p v-if="esqueciSenha === false" class="texto-ou-logar-google">Ou</p>
+                    <div v-if="esqueciSenha === false" class="container-login-google">
                         <button class="google"></button>
                         <button class="facebook"></button>
                     </div>
                 </div>
                 <div v-if="dadosCorretos === true" class="container-loading">
-                        <loading/>
+                    <loading/>
                 </div>
             </div>
         </div>
@@ -42,9 +43,10 @@
 </template>
 <script setup lang="ts">
     import { reactive,ref } from 'vue';
-    import cabecalho from './cabecalho.vue';
-    import Loading from "./loading.vue";
+    import cabecalho from '../components/cabecalho.vue';
+    import Loading from "../components/loading.vue";
     import { useRouter } from 'vue-router';
+    import Popoup from "../components/popup.vue";
 
     const router  = useRouter();
 
@@ -77,43 +79,72 @@
     } 
 
     const Logar = async () =>{
-        if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email) && resultSenhaErro.value === false && form.senha.trim().length >= 8 ){
-            dadosCorretos.value = true;
-            const nome = "Dijalma Duarte";
+        if(esqueciSenha.value === true){
+            if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email)){
+                dadosCorretos.value = true;
 
-            try{
-                const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/verificar-cadastro",{
-                    method:"POST",
-                    headers:{"Content-Type":"application/json"},
-                    body:JSON.stringify({
-                        nome:nome,
-                        email:form.email,
-                        senha:form.senha,
+                try{
+                    const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/enviar-codigo",{
+                        method:"POST",
+                        headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({
+                            email:form.email,
+                        })
                     })
-                })
 
-                if(resposta.status === 200){
-                    alert("Tudo certo");
+                    if(resposta.status === 200){
+                        alert("codigo enviado");
+                    }
+                    if(resposta.status === 400){
+                        alert("Errod")
+                    }
+                }catch(erro){
+                        alert("Algo deu errado com o server");
+                }finally{
+                    dadosCorretos.value = false
                 }
-                if(resposta.status === 400){
-                    alert("Errod")
-                }
-            }catch(erro){
-                alert("Algo deu errado com o server");
-            }finally{
-                dadosCorretos.value = false
+            }else{
+                alert("Dados incorretos")
             }
-        }else{
-            alert("Dados imcopletos")
+
+        }else if(esqueciSenha.value === false){
+            if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email) && resultSenhaErro.value === false && form.senha.trim().length >= 8 ){
+
+                dadosCorretos.value = true;
+
+                let nome:string = "Dijalma Duarte Fleitas"; 
+
+                try{
+                    const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/verificar-cadastro",{
+                        method:"POST",
+                        headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({
+                            nome:nome,
+                            email:form.email.trim(),
+                            senha:form.senha.trim(),
+                        })
+                    })
+
+                    if(resposta.status === 200){
+                        alert("Usuario existe");
+                    }
+                    if(resposta.status === 400){
+                        alert("Usuario não existe")
+                    }
+                }catch(erro){
+                        alert("Algo deu errado com o server");
+                }finally{
+                    dadosCorretos.value = false
+                }
+            }else{
+                alert("Dados incorretos");
+            }
         }
     }
-    
-    console.log(form)
     const irParaHome = () =>{
         router.push("/");
     }
-    
-    
+
 </script>
 <style lang ="scss" scoped>
 @use "../components-scss/variaveis.scss";
@@ -141,11 +172,10 @@
             @include variaveis.modalSurface;
             @include variaveis.modalTextMuted;
             height: 450px;
-            width: 70%;
+            width: 80%;
             position: absolute;
             top: 200px;
             border-radius: 10px;
-            padding: variaveis.$space-md;
             .voltar-login{
                 @include variaveis.padraoBotao;
                 margin-top: variaveis.$space-sm;
