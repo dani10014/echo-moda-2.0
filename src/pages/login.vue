@@ -203,7 +203,7 @@
                 display: flex;
                 flex-direction: column;
                 justify-self: center;
-                margin: 2rem variaveis.$space-xxs;
+                margin: 2rem variaveis.$space-md;
                 gap:10px;
                 transition: alll 0.3s ease-in-out;
                 @media(min-width:750px){
@@ -211,7 +211,8 @@
                 }
                 input{
                     width: 100%;
-                    padding: variaveis.$space-md;
+                    padding: variaveis.$space-md 0;
+                    padding-left:0.1rem;
                     border-radius: 10px;
                     border: none;
                     &:focus{
