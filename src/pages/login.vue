@@ -176,7 +176,6 @@
             position: absolute;
             top: 200px;
             border-radius: 10px;
-            padding:0 variaveis.$space-md;
             .voltar-login{
                 @include variaveis.padraoBotao;
                 margin-top: variaveis.$space-sm;
@@ -211,6 +210,7 @@
                     margin: 2rem variaveis.$space-3xl;
                 }
                 input{
+                    width: 100%;
                     padding: variaveis.$space-md;
                     border-radius: 10px;
                     border: none;
