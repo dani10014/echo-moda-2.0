@@ -1,20 +1,60 @@
 <template>
-    <div class="popoup-aviso">
-        <span>{{ mensagem }}</span>
-    </div>
+        <div class=container-popup>
+            <Transition name="slide">
+                <div v-if="popupAtivo" class="popoup-aviso">
+                    <span>{{ textoPopUp }}</span>
+                </div>
+            </Transition>
+        </div>
 </template>
 <script setup lang="ts">
+import {ref} from "vue";
 
-    defineProps({
-        mensagem:{
-            type:String,
-            required:true
-        }
-    }) 
+    let textoPopUp = ref("");
+    let popupAtivo = ref(false);
 
+    const exibirPopUp = ((mensagem:string) => {
+        textoPopUp.value = mensagem;
+        popupAtivo.value = true;
+
+        setTimeout(()=> {
+            popupAtivo.value = false
+        },3000)
+
+    })
+defineExpose({
+    exibirPopUp
+})
 </script>
 <style lang="scss" scoped>
-    .popoup-aviso{
-        background-color: black;
+    .container-popup{
+        display: flex;
+        justify-content: center;
+        .popoup-aviso{
+            display: flex;
+            color: #fff;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            height: 50px;
+            z-index: 9000;
+            position: fixed;
+            bottom: 30px;
+            width: 20%;
+            border-radius: 10px;
+        }
     }
+
+    .slide-enter-active,
+    .slide-leave-active {
+        transition: all 0.4s ease;
+    }
+
+
+    .slide-enter-from,
+    .slide-leave-to {
+        transform: translateY(-50px); 
+        opacity: 0;                   
+    }
+
 </style>

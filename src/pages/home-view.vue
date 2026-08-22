@@ -43,9 +43,6 @@
                 />
             </div>
         </section>
-        <Popup
-            mensagem ="ola"
-        />
     </main>
 </template>
 
@@ -53,7 +50,6 @@
 import CardProduto from '../components/card-produto.vue'
 import Loading from "../components/loading.vue";
 import Cabecalho from '../components/cabecalho.vue';
-import Popup from '../components/popup.vue';
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';

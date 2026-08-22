@@ -39,6 +39,7 @@
                 </div>
             </div>
         </div>
+        <Popup ref="popupRef"/>
     </main>
 </template>
 <script setup lang="ts">
@@ -46,7 +47,7 @@
     import cabecalho from '../components/cabecalho.vue';
     import Loading from "../components/loading.vue";
     import { useRouter } from 'vue-router';
-    import Popoup from "../components/popup.vue";
+    import Popup from "../components/popup.vue";
 
     const router  = useRouter();
 
@@ -61,6 +62,7 @@
     let resultSenhaErro = ref(false) ;
     let esqueciSenha = ref(false);
     let dadosCorretos = ref(false);
+    const popupRef = ref<any>(null);
 
     const validarEmail = () => {
         resultEmailErro.value = !regex.test(form.email);
@@ -70,6 +72,7 @@
         resultSenhaErro.value = form.senha.trim().length < 8; 
     }
     
+
     const esqueciAsenha = () =>{
         esqueciSenha.value = true
     }
@@ -93,7 +96,7 @@
                     })
 
                     if(resposta.status === 200){
-                        alert("codigo enviado");
+                        alert("Codigo enviado")
                     }
                     if(resposta.status === 400){
                         alert("Errod")
@@ -126,7 +129,7 @@
                     })
 
                     if(resposta.status === 200){
-                        alert("Usuario existe");
+                        popupRef.value?.exibirPopUp("Usuario possui conta");
                     }
                     if(resposta.status === 400){
                         alert("Usuario não existe")
@@ -168,6 +171,8 @@
         display: flex;
         justify-content: center;
         .card-login{
+            position: relative;
+            overflow: hidden;
             background-color: #fff;
             @include variaveis.modalSurface;
             @include variaveis.modalTextMuted;
@@ -176,7 +181,7 @@
             position: absolute;
             top: 200px;
             border-radius: 10px;
-            padding:variaveis.$space-xs variaveis.$space-xs;
+            padding:variaveis.$space-xs;
             @media(min-width:750px){
                 padding:variaveis.$space-xs variaveis.$space-lg;
             }
@@ -193,15 +198,16 @@
                 @include variaveis.fontePadraoSite;
             }
             .container-loading{
+                position: absolute;
+                inset: 0;
+                z-index: 1000;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                position: absolute;
-                z-index: 1000;
                 width: 100%;
-                background-color: rgba(0, 0, 0, 0.734);
-                top: 0;
                 height: 100%;
+                background-color: rgba(0, 0, 0, 0.734);
+                border-radius: inherit;
             }
             .inputs{
                 display: flex;
