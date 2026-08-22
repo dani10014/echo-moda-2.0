@@ -11,13 +11,23 @@
         </div>
         <div class="container-card-login">
             <div class="card">
-                <h2>Login</h2>
-                <input type="text" placeholder="email">
-                <input type="text" placeholder="senha">
+                <h2 v-if="!esqueciSenha">Login</h2>
+                <h2 v-if="esqueciSenha">Email</h2>
+                
+                <input type="text" v-model="form.email" placeholder="Email" @keyup="validarEmail">
+                <span v-if="resultEmailErro && form.email.length > 0" class="aviso-campo-invalido">Email incorreto</span>
+
+                <input v-if="!esqueciSenha" v-model="form.senha" type="text" @keyup="validarSenha" placeholder="Senha">
+                <span v-if="resultSenhaErro && !esqueciSenha && form.senha.length > 0" class="aviso-campo-invalido">Senha com minimo de 8 caracteres</span>
+
+                <a href="#" v-if="!esqueciSenha" @click="esqueciAsenha" class="btn-esqueci-senha">Esqueci a senha</a>
+                <div class="botao-acessar">
+                    <button class="btn-acessar" @click="Logar">Entrar</button>
+                </div>
+                <div v-if="dadosCorretos === true" class="container-loading">
+                    <loading/>
+                </div>
             </div>
-        </div>
-        <div v-if="dadosCorretos === true" class="container-loading">
-            <loading/>
         </div>
         <Popup ref="popupRef"/>
     </main>
@@ -51,7 +61,6 @@
     const validarSenha = () => {
         resultSenhaErro.value = form.senha.trim().length < 8; 
     }
-    
 
     const esqueciAsenha = () =>{
         esqueciSenha.value = true
@@ -160,17 +169,58 @@
             flex-direction: column;
             overflow-y: hidden;
             overflow-x: hidden;
+            position: relative;
             height: 450px;
             background-color: black;
             color: #fff;
             width: 80%;
             border-radius: 10px;
+            padding: variaveis.$space-md;
             h2{
                 text-align: center;
-                
+                font-size: variaveis.$font-size-xl;
+                margin-bottom: variaveis.$space-3xl;
+                @include variaveis.fontePadraoSite;
             }
             input{
+                padding: variaveis.$space-md;
+                margin-bottom: variaveis.$space-xs;
+                border: none;
+                border-radius: 5px;
+                transition: all 0.3s ease-in-out;
+            }
+            .aviso-campo-invalido{
+                color: red;
+                font-size: variaveis.$space-xs;
+                margin: variaveis.$space-sm 0;
+                @include variaveis.fontePadraoSite;
+                &::before{
+                    content: "* ";
+                }
+            }
+            .botao-acessar{
+                display: flex;
+                justify-content: center;
+                width:100%;
+                margin-top: variaveis.$space-xl;
+                button{
+                    width: 50%;
+                    padding: variaveis.$space-md;
+                }
+            }
+            .container-loading{
+                display: flex;
+                left: 0;
+                justify-content: center;
+                align-items: center;
+                background-color: rgba(0, 0, 0, 0.504);
                 width: 100%;
+                height: 100%;
+                position: absolute;
+            }
+            .btn-esqueci-senha{
+                font-size: variaveis.$font-size-sm;
+                margin-top: variaveis.$space-sm;
             }
         }
     }
