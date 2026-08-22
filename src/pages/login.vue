@@ -215,7 +215,6 @@
                 justify-self: center;
                 gap:10px;
                 transition: all 0.3s ease-in-out;
-                margin: variaveis.$space-3xl variaveis.$space-md;
                 @media(min-width:750px){
                     margin: variaveis.$space-3xl;
                 }
