@@ -9,35 +9,15 @@
         <div class="bg-login">
             <img src="../assets/images/hero-background.png">
         </div>
-        <div class="container-base-card">
-            <div class="card-login">
-                <button v-if="esqueciSenha === true " class="voltar-login" @click="voltarLogin">Voltar</button>
-                <h2 v-if="esqueciSenha === false ">login</h2>
-                <h2 v-if="esqueciSenha === true ">Email para recuperação</h2>
-                <div class="inputs">
-                    <input v-model="form.email" type="text" @input="validarEmail()" placeholder="Email">
-                    <span  v-if="resultEmailErro === true" class="invalido-mensagem">* Email incorreto</span>
-
-                    <input v-if="esqueciSenha === false" v-model="form.senha" type="password" @input="validarSenha()" placeholder="Senha">
-                    <span v-if="resultSenhaErro === true" class="invalido-mensagem">* Senha precisa conter 8 caracteres minimo</span>
-                    
-                    <a href="#" v-if="esqueciSenha === false" @click="esqueciAsenha" class="esqueci-a-senha-btn">Esqueci a senha</a>
-
-                    <div class="btn-acessar">
-                        <button v-if="esqueciSenha === false" @click="Logar">Entrar</button>
-                        <button v-else @click="Logar">Prosseguir</button>
-                    </div>
-
-                    <p v-if="esqueciSenha === false" class="texto-ou-logar-google">Ou</p>
-                    <div v-if="esqueciSenha === false" class="container-login-google">
-                        <button class="google"></button>
-                        <button class="facebook"></button>
-                    </div>
-                </div>
-                <div v-if="dadosCorretos === true" class="container-loading">
-                    <loading/>
-                </div>
+        <div class="container-card-login">
+            <div class="card">
+                <h2>Login</h2>
+                <input type="text" placeholder="email">
+                <input type="text" placeholder="senha">
             </div>
+        </div>
+        <div v-if="dadosCorretos === true" class="container-loading">
+            <loading/>
         </div>
         <Popup ref="popupRef"/>
     </main>
@@ -167,101 +147,30 @@
                 filter: brightness(0.5);
         }
     }
-    .container-base-card{
+    .container-card-login{
+        height: 100%;
+        position: absolute;
         display: flex;
         justify-content: center;
-        .card-login{
-            position: relative;
-            overflow: hidden;
-            background-color: #fff;
-            @include variaveis.modalSurface;
-            @include variaveis.modalTextMuted;
+        align-items: center;
+        top: 0;
+        width: 100%;
+        .card{
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            overflow-x: hidden;
             height: 450px;
+            background-color: black;
+            color: #fff;
             width: 80%;
-            position: absolute;
-            top: 200px;
             border-radius: 10px;
-            padding:variaveis.$space-xs;
-            @media(min-width:750px){
-                padding:variaveis.$space-xs variaveis.$space-lg;
-            }
-            .voltar-login{
-                @include variaveis.padraoBotao;
-                margin-top: variaveis.$space-sm;
-            }
-            @media(min-width:750px){
-                top: 100px;
-                width: 50%;
-            }
             h2{
                 text-align: center;
-                @include variaveis.fontePadraoSite;
+                
             }
-            .container-loading{
-                position: absolute;
-                inset: 0;
-                z-index: 1000;
-                display: flex;
-                justify-content: center;
-                align-items: center;
+            input{
                 width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.734);
-                border-radius: inherit;
-            }
-            .inputs{
-                display: flex;
-                flex-direction: column;
-                justify-self: center;
-                gap:10px;
-                transition: all 0.3s ease-in-out;
-                @media(min-width:750px){
-                    margin: variaveis.$space-3xl;
-                }
-                input{
-                    width: 100%;
-                    padding: variaveis.$space-md 0;
-                    padding-left:0.1rem;
-                    border-radius: 10px;
-                    border: none;
-                    &:focus{
-                        outline:2px solid rgba(117, 90, 0, 1) ;
-                    }
-                }
-                .invalido-mensagem{
-                    color: red;
-                    font-size: variaveis.$font-size-sm;
-                    
-                }
-                .btn-acessar{
-                    display: flex;
-                    margin-top: variaveis.$space-md;
-                    width: 100%;
-                    justify-content: center;
-                    button{
-                        width: 50%;
-                        align-items: center;
-                        padding:variaveis.$space-md;
-                        border-radius: 10px;
-                        border: none;
-                    }
-                }
-                .esqueci-a-senha-btn{
-                    text-align: start;
-                    font-size: variaveis.$font-size-sm;
-                }
-                .texto-ou-logar-google{
-                    text-align: center;
-                }
-                .container-login-google{
-                    display:flex;
-                    flex-direction:column;
-                    justify-content:center;
-                    align-items:center;
-                    button{
-                        width: 30%;
-                    }
-                } 
             }
         }
     }
