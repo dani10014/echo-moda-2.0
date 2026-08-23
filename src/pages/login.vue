@@ -164,6 +164,9 @@
         align-items: center;
         top: 0;
         width: 100%;
+        @media(min-width:750px){
+            top: 30px;
+        }
         .card{
             display: flex;
             flex-direction: column;
@@ -174,8 +177,12 @@
             background-color: black;
             color: #fff;
             width: 80%;
+            top: 20px;
             border-radius: 10px;
             padding: variaveis.$space-md;
+            @media(min-width:750px){
+                width: 50%;
+            }
             h2{
                 text-align: center;
                 font-size: variaveis.$font-size-xl;
