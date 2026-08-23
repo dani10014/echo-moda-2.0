@@ -98,7 +98,11 @@ const irParaLogin = () => {
             min-height: 100vh;
         }
         &_seja-bem-vindo{
-            padding: 0 5rem;
+            padding: 0 2rem;
+            width: 100%;
+            @media(min-width:750px){
+                padding: 0 5rem;
+            }
             h1{
                 margin-bottom: 0;
                 @include variaveis.fontePadraoSite;

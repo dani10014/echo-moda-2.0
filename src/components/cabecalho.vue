@@ -1,6 +1,6 @@
 <template>
     <div class="cabecalho">
-        <h3 class="cabecalho__nome-loja">Echo Moda</h3>
+        <h4 class="cabecalho__nome-loja">Echo Moda</h4>
         <button class="cabecalho__botao-logar" @click="$emit('acao')">
             {{ textoBtn }}
         </button>
@@ -31,10 +31,12 @@
         box-sizing: border-box;
         &__nome-loja{
             color: #fff;
-            @include variaveis.fonteNomeLoja
+            @include variaveis.fonteNomeLoja;
+            margin:0;
         }
         &__botao-logar{
             @include variaveis.padraoBotao;
+            font-size: 0.8rem;
             @include variaveis.fontePadraoSite
         }
     }
