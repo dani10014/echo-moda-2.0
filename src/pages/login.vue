@@ -144,6 +144,9 @@
 .main-login{
     height: 100vh;
     background: linear-gradient(146deg, rgba(246, 247, 220, 1) 0%, rgba(46, 0, 0, 1) 0%, rgba(117, 90, 0, 1) 96%);
+    overflow-x: hidden;
+    overflow-y: hidden;
+    position: relative;
     .bg-login{
         height: 50vh;
         width: 100%;
@@ -164,6 +167,7 @@
         align-items: center;
         top: 0;
         width: 100%;
+        overflow-y: hidden;
         @media(min-width:750px){
             top: 30px;
         }
@@ -173,15 +177,16 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: 450px;
-            background-color: black;
+            height: 350px;
+            @include variaveis.modalSurface;
+            @include variaveis.corModais;
             color: #fff;
             width: 80%;
-            top: 20px;
+            top: 50px;
             border-radius: 10px;
             padding: variaveis.$space-md;
             @media(min-width:750px){
-                width: 50%;
+                width: 40%;
             }
             h2{
                 text-align: center;
@@ -194,7 +199,12 @@
                 margin-bottom: variaveis.$space-xs;
                 border: none;
                 border-radius: 5px;
+                outline: none;
                 transition: all 0.3s ease-in-out;
+                &:focus{
+                    background-color: rgba(201, 201, 201, 0.53);
+                    
+                }
             }
             .aviso-campo-invalido{
                 color: red;
@@ -212,7 +222,7 @@
                 margin-top: variaveis.$space-xl;
                 button{
                     width: 50%;
-                    padding: variaveis.$space-md;
+                    @include variaveis.padraoBotao
                 }
             }
             .container-loading{

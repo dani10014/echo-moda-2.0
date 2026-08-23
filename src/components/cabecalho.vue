@@ -27,8 +27,9 @@
         left: 0;
         right: 0;
         z-index: 2000;
-        padding: 1rem 2rem;
+        padding: 2rem 2rem;
         box-sizing: border-box;
+        font-size: 1rem;
         &__nome-loja{
             color: #fff;
             @include variaveis.fonteNomeLoja;
@@ -36,7 +37,6 @@
         }
         &__botao-logar{
             @include variaveis.padraoBotao;
-            font-size: 0.8rem;
             @include variaveis.fontePadraoSite
         }
     }

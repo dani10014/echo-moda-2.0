@@ -102,6 +102,7 @@ const irParaLogin = () => {
             width: 100%;
             @media(min-width:750px){
                 padding: 0 5rem;
+                width:30%;
             }
             h1{
                 margin-bottom: 0;
@@ -109,7 +110,7 @@ const irParaLogin = () => {
                 text-align: center;
                 margin-bottom: 2rem;
                 @media(min-width:750px){
-                    text-align: start;
+                    text-align: center;
                 }
             }
             p{
@@ -118,9 +119,12 @@ const irParaLogin = () => {
                 font-size: 0.9rem;
                 text-align: center;
                 @include variaveis.fontePadraoSite;
+                @media(min-width:750px){
+                    text-align: center;
+                }
             }
             ul{
-                margin: 2rem 0;
+                margin: variaveis.$space-xl 0;
                 @include variaveis.fontePadraoSite;
                 display: flex;
                 font-size: 0.5rem;
@@ -128,9 +132,9 @@ const irParaLogin = () => {
                 justify-content: center;
                 gap: 1rem;
                 @media(min-width:750px){
-                    display: block;
-                    font-size: 1rem;
-                    padding:0 5rem;
+                    display: flex;
+                    text-align: justify;
+                    justify-content: center;
                 }
             }
             .btn-catalogo{
