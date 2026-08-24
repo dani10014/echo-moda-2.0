@@ -3,6 +3,7 @@
         <header>
             <cabecalho
                 textoBtn="Entrar"
+                @abrirMenu = "ativarMenuDrop"
                 @acao="irParaLogin"
             />
         </header>
@@ -43,6 +44,15 @@
                 />
             </div>
         </section>
+        <Transition name="fade">
+            <div v-if="menuDropEstaAtivo" class="menu-drop">
+                <button><i class="fa-solid fa-house"></i> Home</button>
+                <button><i class="fa-solid fa-fire"></i> Destaque</button>
+                <button><i class="fa-solid fa-comment"></i> Mensagems</button>
+                <button><i class="fa-solid fa-shirt"></i> Produtos</button>
+                <button><i class="fa-solid fa-headset"></i> Fale conosco</button>
+            </div>
+        </Transition>
     </main>
 </template>
 
@@ -55,6 +65,11 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
+let menuDropEstaAtivo = ref(false);
+
+const ativarMenuDrop = () =>{
+    menuDropEstaAtivo.value = !menuDropEstaAtivo.value;
+}
 
 const produtos = [
     { id: 2, name: 'Jaqueta Jeans Oversized', preco: 'R$ 249,90', imagem: '/src/assets/images/Gemini_Generated_Image_uy7iaguy7iaguy7i.png' },
@@ -72,6 +87,15 @@ const irParaLogin = () => {
 <style lang="scss" scoped>
 @use "../components-scss/variaveis.scss";
 
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 .home{
     position: relative;
     @include variaveis.corPaginaPadrao;
@@ -141,6 +165,7 @@ const irParaLogin = () => {
                 @include variaveis.padraoBotao;
                 @include variaveis.fontePadraoSite;
                 width: 100%;
+                cursor: pointer;
             }
             .tags-seguranca{
                 font-size: 0.7rem;
@@ -148,6 +173,7 @@ const irParaLogin = () => {
                 width: 100%;
                 margin-top: 3rem;
                 justify-content: space-between;
+                cursor: pointer;
                 a{
                     color: #fff;
                     text-decoration: none;
@@ -170,6 +196,7 @@ const irParaLogin = () => {
             display: flex;
             justify-content: center;
             gap: 2rem;
+            cursor: pointer;
             @media(min-width:750px){
                 gap: 5rem;
             }
@@ -192,7 +219,8 @@ const irParaLogin = () => {
             justify-content: center;
             flex-direction: column;
             margin: 0 5rem;
-            height: 250px;
+            height: 350px;
+            padding-bottom: variaveis.$space-md;
             gap:5rem;
             @media(min-width:750px){
                 flex-direction: row;
@@ -210,6 +238,34 @@ const irParaLogin = () => {
                     box-shadow: 0 0 0 5px #fff;
                 }
             }
+        }
+    }
+    .menu-drop{
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        position: fixed;
+        top:100px;
+        right:60px;
+        width: 50%;
+        height: 250px;
+        border-radius: 10px;
+        box-shadow: variaveis.$shadow-soft;
+        @media(min-width:750px){
+            width: 20%;
+            right: 100px;
+        }
+        button{
+            height: 100%;
+            border: none;
+            transition: all 0.3s ease-in-out;
+            border-radius: 10px;
+            @include variaveis.fontePadraoSite;
+            color: black;
+            cursor: pointer;
+            text-align: start;
+            padding:variaveis.$space-md;
+            @include variaveis.hoverbotoes;
         }
     }
 }

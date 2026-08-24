@@ -48,6 +48,7 @@ $shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
     padding: 15px;
     border-radius: $radius-sm;
     box-shadow: $shadow-soft;
+    cursor: pointer;
     border: none;
 }
 
@@ -71,10 +72,16 @@ $shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
 
 @mixin corModais {
     background: linear-gradient(145deg, rgba(30, 20, 15, 0.95), rgba(10, 5, 2, 0.95));
-    border: 1px solid $color-gold-border;
+    border: 1px solid #ffffff4a;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
 }
 
+@mixin hoverbotoes{
+    &:hover{
+        background-color: #d6b46d;
+        /*background-color: rgba(128, 128, 128, 0.653);*/
+    }
+}
 @mixin modalSurface {
     background: $color-bg-panel;
     border: 1px solid $color-white-border;

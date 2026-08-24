@@ -11,6 +11,7 @@
         </div>
         <div class="container-card-login">
             <div class="card">
+                <button v-if="esqueciSenha" class="btn-voltar-tela-login" @click="voltarTelaLogin">X</button>
                 <h2 v-if="!esqueciSenha">Login</h2>
                 <h2 v-if="esqueciSenha">Email</h2>
                 
@@ -66,7 +67,7 @@
         esqueciSenha.value = true
     }
 
-    const voltarLogin = () =>{
+    const voltarTelaLogin = () =>{
         esqueciSenha.value = false
     } 
 
@@ -177,7 +178,7 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: 350px;
+            height: 400px;
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;
@@ -196,20 +197,20 @@
             }
             input{
                 padding: variaveis.$space-md;
-                margin-bottom: variaveis.$space-xs;
                 border: none;
                 border-radius: 5px;
                 outline: none;
+                margin-bottom: variaveis.$space-sm;
                 transition: all 0.3s ease-in-out;
                 &:focus{
                     background-color: rgba(201, 201, 201, 0.53);
-                    
+                    color: #fff;
                 }
             }
             .aviso-campo-invalido{
                 color: red;
                 font-size: variaveis.$space-xs;
-                margin: variaveis.$space-sm 0;
+                margin-bottom:variaveis.$space-sm;
                 @include variaveis.fontePadraoSite;
                 &::before{
                     content: "* ";
@@ -228,6 +229,7 @@
             .container-loading{
                 display: flex;
                 left: 0;
+                top: 0;
                 justify-content: center;
                 align-items: center;
                 background-color: rgba(0, 0, 0, 0.504);
@@ -238,6 +240,19 @@
             .btn-esqueci-senha{
                 font-size: variaveis.$font-size-sm;
                 margin-top: variaveis.$space-sm;
+            }
+            .btn-voltar-tela-login{
+                width: 5%;
+                height: 5%;
+                cursor: pointer;
+                border: none;
+                background-color: inherit;
+                color: #fff;
+                transition: all 0.3s ease-in-out;
+                border-radius: 10px;
+                &:hover{
+                    background-color: #ffffff78;
+                }
             }
         }
     }
