@@ -5,10 +5,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { Resend } from 'resend';
-import { gerarToken } from '../services/auth.js';
-import { verificarToken } from '../services/auth.js';
-import { criarHash } from '../services/auth.js';
-import { compararSenha } from '../services/auth.js';
 import rateLimit from 'express-rate-limit';
 
 dotenv.config();
@@ -19,7 +15,7 @@ const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5500";
 const allowedOrigins = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
     "https://echo-moda-2-0.vercel.app"
 ];
@@ -107,7 +103,87 @@ function validarDadosUsuario(dados) {
 function sanitizarCPF(cpf) {
     return cpf.replace(/\D/g, "");
 }
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
+const SECRET_KEY = process.env.JWT_SECRET;
+
+function gerarToken(usuario){
+    if (!SECRET_KEY) {
+        throw new Error('JWT_SECRET não configurado no ambiente');
+    }
+    
+    const payload = {
+        id: usuario.id,
+        email: usuario.email,
+    };
+    
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
+}
+function extrairTokenDeCookie(cookieHeader) {
+    if (!cookieHeader) return null;
+    return cookieHeader.split(';').reduce((token, cookie) => {
+
+        const [nome, valor] = cookie.trim().split('=');
+        if (nome === 'token' || nome === 'AuthToken') {
+            return decodeURIComponent(valor || '');
+        }
+        return token;
+        
+    }, null);
+}
+
+function verificarToken(req,res,next){
+    const authHeader = req.headers['authorization'];
+    let token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        token = extrairTokenDeCookie(req.headers.cookie || '');
+    }
+
+    if (!token) {
+        return res.status(401).json({ erro: 'Token não fornecido ou acesso negado.' });
+    }
+
+    jwt.verify(token, SECRET_KEY, (err, usuarioDecodificado) => {
+        if (err) {
+            return res.status(403).json({ erro: 'Token inválido ou expirado.' });
+        }
+        
+        req.usuario = usuarioDecodificado; 
+        next();
+    });
+}
+
+const saltRounds = 10; 
+
+
+async function criarHash(senhaPura) {
+    return await bcrypt.hash(senhaPura, saltRounds);
+}
+
+async function compararSenha(senhaPura, senhaComHash) {
+    return await bcrypt.compare(senhaPura, senhaComHash);
+}
+
+app.post('/api/verificar-google', async (req, res) => {
+    const { token} = req.body;
+
+    if (!token) {
+        return res.status(400).json({ error: 'Token é obrigatório.' });
+    }
+
+    try {
+        const dadosUsuario = await verificarTokenGoogle(token);
+
+    // Lógica da aplicação: Buscar/criar usuário no banco (ex: Prisma)
+    // e retornar o JWT de sessão próprio da sua aplicação.
+        
+        return res.json({ status: 'sucesso', user: dadosUsuario });
+    }catch (error) {
+        return res.status(401).json({ error: error.message });
+    }
+});
 app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
     try{
         const {itens} = req.body;

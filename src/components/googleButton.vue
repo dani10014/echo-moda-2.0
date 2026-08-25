@@ -15,10 +15,28 @@
         credential: string
     }
 
-    const callback = (response: GoogleCallbackResponse) => {
+    const callback = async (response: GoogleCallbackResponse) => {
         console.log('Login efetuado com sucesso:', response)
-        console.log('Token JWT para validação:', response.credential)
+
+        if(response){
+            try{
+                const resultValidacao = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-google",{
+                    method:"Post",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        token:response,
+                    })
+                })
+                
+                if(resultValidacao.status === 200){
+                    alert("Verificado! proseguindo")
+                }
+
+            }catch(erro){
+            
+            }
     }
+}
 
 </script>
 
