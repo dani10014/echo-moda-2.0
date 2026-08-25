@@ -17,7 +17,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "start":" node server.js"
+    "start":" node src/server/server.js"
   },
   "dependencies": {
     "pinia": "^4.0.2",
