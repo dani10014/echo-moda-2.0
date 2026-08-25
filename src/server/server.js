@@ -1,0 +1,594 @@
+import { PrismaClient } from '@prisma/client';
+import { MercadoPagoConfig, Payment } from "mercadopago";
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import crypto from "crypto";
+import { Resend } from 'resend';
+import { gerarToken } from './src/js/components/utils/auth.js';
+import { verificarToken } from './src/js/components/utils/auth.js';
+import { criarHash } from './src/js/components/utils/auth.js';
+import { compararSenha } from './src/js/components/utils/auth.js';
+import rateLimit from 'express-rate-limit';
+
+dotenv.config();
+
+const prisma = new PrismaClient();
+const app = express();
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5500";
+const allowedOrigins = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://echo-moda-2-0.vercel.app"
+];
+const resend = new Resend(process.env.RESEND_API_KEY);
+const PORT = process.env.PORT || 3000;
+
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/'
+};
+
+const limitadorAuth = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 10,
+    message: { sucesso: false, erro: "Muitas tentativas a partir deste IP. Tente novamente mais tarde." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const limitadorGeral = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 150,
+    message: { sucesso: false, erro: "Muitas tentativas a partir deste IP. Tente novamente mais tarde." },
+    standardHeaders: true,
+    legacyHeaders: false,
+})
+
+app.set('trust proxy', 1);
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Bloqueado pelo CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+app.use(express.json({ limit: "1mb" }));
+
+const client = new MercadoPagoConfig({
+    accessToken: process.env.ACCESS_TOKEN,
+    options: { timeout: 5000 }
+});
+const payment = new Payment(client);
+
+BigInt.prototype.toJSON = function() {
+    return this.toString();
+};
+
+console.log(prisma);
+
+function validarDadosUsuario(dados) {
+    const erros = [];
+
+    if (!dados.email || !dados.email.includes("@")) {
+        erros.push("Email inválido");
+    }
+
+    if (!dados.nome || dados.nome.trim().length < 3) {
+        erros.push("Nome deve ter no mínimo 3 caracteres");
+    }
+
+    if (!dados.cpf || !/^\d{11}$/.test(dados.cpf.replace(/\D/g, ""))) {
+        erros.push("CPF inválido (deve ter 11 dígitos)");
+    }
+
+    if (typeof dados.precoTotal !== "number" || dados.precoTotal <= 0) {
+        erros.push("Preço total inválido");
+    }
+
+    return erros;
+}
+
+function sanitizarCPF(cpf) {
+    return cpf.replace(/\D/g, "");
+}
+
+app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
+    try{
+        const {itens} = req.body;
+
+        if(!itens){
+            res.status(400).json({mensagem:"Dados invalidos"});
+            return
+        }
+
+        const id = itens.map((item => Number(item.id)));
+        
+        const resultado = await prisma.produtos.findMany({
+            where:{
+                id:{in:id}
+            }
+        })
+
+        let valorTotal = 0;
+
+        itens.forEach(item => {
+            const produtoBanco = resultado.find(produto => Number(produto.id) === Number(item.id));
+
+            valorTotal += produtoBanco.preco * item.quantidade;
+
+        })
+            return res.status(200).json({sucesso:true,total:valorTotal})
+
+    }catch(erro){
+        console.error("Erro ao buscar produtos para pagamento:", erro);
+        return res.status(500).json({ sucesso: false, erro: "Erro ao buscar produtos para pagamento" });
+    }
+})
+app.post("/api/criar-pagamento",limitadorGeral, async (req, res) => {
+    try {
+        const { email, nome, cpf, precoTotal,idUser } = req.body;
+        const erros = validarDadosUsuario({ email, nome, cpf, precoTotal });
+
+        if (erros.length > 0) {
+            return res.status(400).json({ sucesso: false, erros });
+        }
+
+        const cpfSanitizado = sanitizarCPF(cpf);
+        const nomePartes = nome.trim().split(" ");
+        const firstName = nomePartes[0];
+        const lastName = nomePartes.slice(1).join(" ") || "Silva";
+
+        const body = {
+            transaction_amount: Number(precoTotal),
+            description: "Compra na loja EchoModa",
+            payment_method_id: "pix",
+            payer: {
+                email: email.trim(),
+                first_name: firstName,
+                last_name: lastName,
+                identification: {
+                    type: "CPF",
+                    number: cpfSanitizado
+                }
+            }
+        };
+
+        const requestOptions = {
+            idempotencyKey: crypto.randomUUID() 
+        };
+
+        const resultado = await payment.create({ body, requestOptions });
+
+        const transactionData = resultado.point_of_interaction?.transaction_data;
+        
+        if(resultado && resultado.id){
+
+            const pedidoSalvo = await prisma.pedidos.create({
+                data: {
+                    id:crypto.randomUUID(),
+                    usuario_id:idUser,
+                    mp_id:resultado.id.toString(),
+                    total: Number(precoTotal),
+                    status: "Pendente",
+                    data_pedido:new Date(),
+                }
+            });
+
+            console.log("Pedido salvo com ID:", pedidoSalvo.id);
+        } else {
+            throw new Error("Falha ao obter ID do pagamento do Mercado Pago.");
+        }
+
+        if (!transactionData) {
+            throw new Error("Dados de interação do PIX não retornados pelo Mercado Pago.");
+        }
+
+        return res.json({
+            sucesso: true,
+            idPagamento: resultado.id,
+            copiaECola: transactionData.qr_code,
+            qrCodeLink: transactionData.qr_code_base64
+        });
+
+    } catch (erro) {
+        console.error("Erro detalhado do Mercado Pago:", erro.response?.data || erro.message);
+        
+        const mensagemErro ="Erro ao processar pagamento";
+        return res.status(500).json({ sucesso: false, erro: mensagemErro });
+    }
+});
+app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
+    try{
+        const {nome,email,senha} = req.body;
+
+        if(!nome || !email || !senha){
+            return res.status(400).json({ erro: "Dados incompletos" });
+        }
+        
+        const usuario = await prisma.usuarios.findUnique({
+            where: {
+                email:email.trim()
+            }
+        })
+        if(usuario){
+            return res.status(200).json({mensagem:"usuario existe no banco",usuario})
+            
+        }else{
+            return res.status(409).json({mensagem:"Usuario não existe no banco"})
+        }
+
+    }catch(erro){
+        console.error("Erro:", erro);
+        return res.status(500).json({ erro: "Erro ao conectar no servidor" });
+    }
+})
+app.post("/api/logar",limitadorAuth,async (req,res) => {
+    try{
+        const {email,senha} = req.body
+        
+        if(!email || !senha){
+            res.status(400).json({mensagem:"Dados invalidos"})
+            return
+        }
+        if(senha.trim().length !== 8){
+            return res.status(400).json({erro:"Tamanho de senha incorreta"});
+        }
+        const resultado = await prisma.usuarios.findUnique({
+            where:{
+                email:email.trim(),
+            }
+        });
+        
+        const senhaValida = resultado ? await compararSenha(senha, resultado.senha) : false;
+
+        if (!resultado || !senhaValida) {
+            return res.status(401).json({ sucesso: false, erro: "E-mail ou senha inválidos" });
+        }
+
+        if(resultado && senhaValida){
+            const { senha: _, ...usuarioSemSenha } = resultado;
+            try {
+                const token = gerarToken(usuarioSemSenha);
+                res.cookie('token', token, COOKIE_OPTIONS);
+                return res.status(200).json({ sucesso: true, usuario: usuarioSemSenha, token: token });
+            } catch (tokenError) {
+                console.error('Erro ao gerar token:', tokenError);
+                return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
+            }
+        }
+
+    }catch(erro){
+        console.error("Erro no login:", erro);
+        return res.status(500).json({ sucesso: false, erro: "Erro interno no servidor" });
+    }
+})
+function gerarCodigoVerificacao() {
+    return crypto.randomInt(100000, 999999).toString();
+}
+const codigosTemporarios = new Map();
+
+async function enviarEmailVerificacao(destinatario, codigo) {
+    return await resend.emails.send({
+        from: 'onboarding@resend.dev', 
+        to: destinatario,
+        subject: 'Seu código de verificação EchoModa',
+        html: `<p>Olá! Seu código de verificação é: <strong>${codigo}</strong>. Ele expira em 5 minutos.</p>`
+    });
+}
+
+app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ erro: "E-mail necessário" });
+
+        const codigo = gerarCodigoVerificacao();
+        const expiraEm = Date.now() + (5 * 60 * 1000);
+        codigosTemporarios.set(email, { codigo, expiraEm });
+        
+        await enviarEmailVerificacao(email, codigo);
+        
+        return res.status(200).json({ mensagem: "Código enviado!" });
+    } catch (erro) {
+        console.error("ERRO DETALHADO NO SMTP:", erro);
+        return res.status(500).json({ erro: "Falha ao enviar e-mail: "});
+    }
+});
+
+app.post("/api/verificar-codigo", limitadorAuth, (req, res) => {
+    const { email, codigo } = req.body;
+    const registro = codigosTemporarios.get(email);
+
+    if (!registro) {
+        return res.status(400).json({ mensagem: "Solicite um código primeiro." });
+    }
+
+    if (Date.now() > registro.expiraEm) {
+        codigosTemporarios.delete(email);
+        return res.status(400).json({ mensagem: "Código expirado." });
+    }
+
+    if (codigo === registro.codigo) {
+        codigosTemporarios.delete(email);
+        return res.status(200).json({ mensagem: "Código verificado com sucesso!" });
+    } else {
+        return res.status(400).json({ mensagem: "Código incorreto." });
+    }
+});
+app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
+    try{
+        const {nome,email,senha} = req.body
+
+        if (!nome || typeof nome !== 'string' || nome.trim().length < 3 || nome.trim().length > 32 ){
+            return res.status(400).json({ erro: "O nome deve ter pelo menos 3 caracteres e ser válido." });
+        }
+        
+        if (/\d/.test(nome)) {
+            return res.status(400).json({ erro: "O nome não pode conter números." });
+        }
+
+        const senhaEhNumero = /^\d+$/.test(String(senha)); 
+
+        if (!senhaEhNumero) {
+            return res.status(400).json({ sucesso: false, erro: "A senha deve conter apenas números." });
+        }
+        
+        if(nome.trim().length > 32){
+            return res.status(400).json({erro:"Nome muito extenso"});
+        }
+
+        if(senha.length !== 8){
+            return res.status(400).json({erro:"Tamanho de senha incorreta"})
+        }
+            const novoUsuario = await prisma.usuarios.create({
+            data:{
+                nome:nome,
+                email:email,
+                senha: await criarHash(senha)
+            }
+        })
+            const {senha: _senha,...usuarioSemSenha} = novoUsuario
+            try {
+                const token = gerarToken(usuarioSemSenha);
+                res.cookie('token', token, COOKIE_OPTIONS);
+                return res.status(201).json({ sucesso: true, mensagem: "Sucesso", novo: usuarioSemSenha, token: token });
+            } catch (tokenError) {
+                console.error('Erro ao gerar token no cadastro:', tokenError);
+                return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
+            }
+
+    }catch(erro){
+        console.error(erro)
+        return res.status(500).json({ erro: "Erro no servidor" });
+    }
+})
+app.get("/api/buscar-produtos",limitadorGeral, async (req, res) => {
+    try{
+        const resultado = await prisma.produtos.findMany();
+
+        return res.status(200).json(resultado);
+    }
+    catch(erro){
+        console.error("ERRO EXATO NO FINDMANY:", erro);
+        return res.status(500).json({ erro: "Erro ao buscar produtos"});
+    }
+})
+app.post("/api/salvar-favoritos",limitadorGeral, async (req, res) => {
+    try {
+        const { idclient, idproduto } = req.body;
+
+        if (!idclient || idproduto == null) {
+            return res.status(400).json({ resultado: "Dados de favorito inválidos" });
+        }
+
+        if (!prisma.favoritos) {
+            return res.status(500).json({ resultado: "Erro interno do servidor"});
+        }
+
+        const resultado = await prisma.favoritos.create({
+            data: {
+                id_client: String(idclient),
+                id_produto: BigInt(idproduto)
+            }
+        });
+
+        return res.status(200).json({ resultado: "Sucesso", dados: resultado });
+
+    } catch (erro) {
+        console.error("Erro ao salvar favorito:", erro);
+        return res.status(500).json({ resultado: "Erro ao conectar no servidor"});
+    }
+});
+app.delete("/api/remover-favoritos",limitadorGeral, async (req,res) =>{
+    try{
+        const {idclient,idproduto} = req.body
+        
+        if(!idclient || !idproduto){
+            return res.status(400).json({mensagem:"Erro no servidor"})
+        }
+        const resultado = await prisma.favoritos.delete({
+            where:{
+                id_client_id_produto:{
+                    id_client:idclient,
+                    id_produto:BigInt(idproduto),
+                }
+            }
+        })
+        return res.status(200).json({mensagem:"Sucesso ao remover produto",produto:resultado})
+        
+    }catch(erro){
+        console.error(erro)
+        return res.status(500).json({mensagem:"Erro ao conversar com o servidor"})
+    }
+})
+app.get("/api/buscar-favoritos",limitadorGeral, async (req,res) =>{
+    try{
+        const {idclient} = req.query
+        
+        if(!idclient){
+            return res.status(400).json({mensagem:"Sem id do cliente"})
+        }
+        const resultado = await prisma.favoritos.findMany({
+            where:{
+                id_client:String(idclient),
+            }
+        })
+
+        return res.status(200).json(resultado)
+
+    }catch(erro){
+        return res.status(500).json({mensagem:"Erro no servidor"})
+    }
+})
+app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,res) =>{
+    try{
+        const{idUser,nomeNovo,novoEmail,novoNumero} = req.body
+
+        if(!idUser || !nomeNovo){
+            return res.status(400).json("Nenhum id e nenhum nome recebido");
+        }
+        
+        if(!novoNumero || typeof(novoNumero) !== "string" || novoNumero.trim().replace(/\D/g, "").length !== 13){
+            return res.status(400).json("Numero invalido");
+        }
+
+        if(!novoEmail || typeof(novoEmail) !== "string"){
+            return res.status(400).json("Email com tipo invalido ");
+        }
+
+        if(nomeNovo.length > 32 || nomeNovo.length < 3){
+            return res.status(400).json("O nome deve ter entre 3 e 32 caracteres.");
+        }
+
+        if(/\d/.test(nomeNovo)){
+            return res.status(400).json({erro:"Nome não pode conter numeros"})
+        }
+
+
+        const resposta = await prisma.usuarios.update({
+            where:{id:idUser},
+            data:{
+                nome:nomeNovo,
+                email:novoEmail,
+                numero:novoNumero,
+            }
+        })
+        const {senha,id,...respostaSemSenha} = resposta
+        return res.status(200).json({Mensagem:"Nome atualizado",Resultado:respostaSemSenha})
+
+    }catch(erro){
+        console.error(erro.message)
+        return res.status(500).json("Erro no servidor")
+    }
+})
+app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken, async (req,res) =>{
+    try{
+        const{cep,numero,rua,bairro,cidade,estado,complemento,idUser} = req.body;
+        
+        if (!idUser) {
+            return res.status(400).json({ erro: "ID do usuário é obrigatório." });
+        }
+
+        if (!cep || !numero || !rua || !bairro || !cidade || !estado) {
+            return res.status(400).json({ erro: "Preencha todos os campos obrigatórios do endereço." });
+        }
+
+        if (!complemento || complemento.trim() === "") {
+            complemento = "Não informado";
+        }
+        
+        const respostaAtualizacao = await prisma.endereco.upsert({
+            where: { id: idUser },
+            update: {
+                cep: cep,
+                numero: numero,
+                rua: rua,
+                bairro: bairro,
+                cidade: cidade,
+                estado: estado,
+                complemento: complemento
+            },
+            create: {
+                id: idUser,
+                cep: cep,
+                numero: numero,
+                rua: rua,
+                bairro: bairro,
+                cidade: cidade,
+                estado: estado,
+                complemento: complemento
+            }
+        })
+
+        return res.status(200).json({ sucesso: true, mensagem: "Endereço atualizado com sucesso", endereco: respostaAtualizacao });
+        
+
+    }catch(erro){
+        console.error("Erro ao atualizar endereço:", erro);
+        return res.status(500).json({ sucesso: false, erro: "Erro ao atualizar endereço" });
+    }
+})
+app.get("/api/buscar-endereco/:idUser", limitadorGeral, verificarToken, async (req, res) => {
+    try{
+        const{idUser} = req.params;
+
+        if(!idUser){
+            return res.status(400).json({erro:"Id do usuario não recebido"})
+        }
+
+        const resultadoBuscaEndereco = await prisma.endereco.findUnique({
+            where:{
+                id:idUser
+            }
+        });
+
+        return res.status(200).json({sucesso:true,endereco:resultadoBuscaEndereco})
+
+    }catch(erro){
+        console.error("Erro no servidor");
+        return res.status(500).json({sucesso:false,erro:"Erro no servidor"})
+    }
+})
+app.get("/api/buscar-historico/:iduser" ,limitadorGeral ,verificarToken, async (req,res) =>{
+    const {iduser} = req.params
+
+    if(!iduser){
+        return res.status(400).json({erro:"Id do usuario não recebido"})
+    }
+
+    const resultadoBuscaHistorico = await prisma.pedidos.findMany({
+        where:{
+            usuario_id:iduser
+        }
+    })
+        return res.status(200).json({Resposta:resultadoBuscaHistorico || []});
+})
+app.get("/api/validar-sessao", verificarToken, (req, res) => {
+    return res.status(200).json({ sucesso: true, usuario: req.usuario });
+});
+app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+});
+
+app.use((req, res) => {
+    res.status(404).json({ erro: "Rota não encontrada" });
+});
+
+app.listen( PORT, ()=> {
+    console.log(`CORS permitido para: ${allowedOrigins.join(", ")}`);
+});
