@@ -51,6 +51,13 @@ $shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
     cursor: pointer;
     border: none;
 }
+@mixin botoesAuth {
+    padding: 10px;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-soft;
+    cursor: pointer;
+    border: none;
+}
 
 @mixin corPaginaPadrao {
     background: $color-black;

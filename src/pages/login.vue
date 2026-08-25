@@ -25,12 +25,16 @@
                 <div class="botao-acessar">
                     <button class="btn-acessar" @click="Logar">Entrar</button>
                 </div>
+                <p class="texto-divisor-ou">Ou</p>
+                <div class="login-google">
+                    <googleButton/>
+                </div>
                 <div v-if="dadosCorretos === true" class="container-loading">
                     <loading/>
                 </div>
             </div>
         </div>
-        <Popup ref="popupRef"/>
+        <Popup ref="PopupRef"/>
     </main>
 </template>
 <script setup lang="ts">
@@ -39,6 +43,7 @@
     import Loading from "../components/loading.vue";
     import { useRouter } from 'vue-router';
     import Popup from "../components/popup.vue";
+    import googleButton from '@/components/googleButton.vue';
 
     const router  = useRouter();
 
@@ -49,11 +54,11 @@
     
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    let resultEmailErro = ref(false) ;
-    let resultSenhaErro = ref(false) ;
+    let resultEmailErro = ref(false);
+    let resultSenhaErro = ref(false);
     let esqueciSenha = ref(false);
     let dadosCorretos = ref(false);
-    const popupRef = ref<any>(null);
+    const PopupRef = ref<any>(null);
 
     const validarEmail = () => {
         resultEmailErro.value = !regex.test(form.email);
@@ -89,7 +94,7 @@
                         alert("Codigo enviado")
                     }
                     if(resposta.status === 400){
-                        alert("Errod")
+                        alert("Erro")
                     }
                 }catch(erro){
                         alert("Algo deu errado com o server");
@@ -97,7 +102,7 @@
                     dadosCorretos.value = false
                 }
             }else{
-                alert("Dados incorretos")
+                PopupRef.value?.exibirPopUp("Dados incorretos");
             }
 
         }else if(esqueciSenha.value === false){
@@ -109,28 +114,30 @@
 
                 try{
                     const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/verificar-cadastro",{
-                        method:"POST",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({
-                            nome:nome,
-                            email:form.email.trim(),
-                            senha:form.senha.trim(),
-                        })
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        nome:nome,
+                        email:form.email,
+                        senha:form.senha
                     })
+                })
 
-                    if(resposta.status === 200){
-                        popupRef.value?.exibirPopUp("Usuario possui conta");
-                    }
-                    if(resposta.status === 400){
-                        alert("Usuario não existe")
-                    }
-                }catch(erro){
-                        alert("Algo deu errado com o server");
-                }finally{
-                    dadosCorretos.value = false
+                if(resposta.status === 200){
+                    PopupRef.value?.exibirPopUp("Prosseguindo para verificação");
                 }
+
+                if(resposta.status === 400){
+                    PopupRef.value?.exibirPopUp("Nenhum usuario encontrado");
+                }
+                }catch(erro){
+                    PopupRef.value?.exibirPopUp("Ocorreu um erro");
+                }finally{
+                    dadosCorretos.value = false;
+                }
+
             }else{
-                alert("Dados incorretos");
+                PopupRef.value?.exibirPopUp("Dados incorretos");
             }
         }
     }
@@ -178,12 +185,12 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: 400px;
+            height: 450px;
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;
             width: 80%;
-            top: 50px;
+            top: 30px;
             border-radius: 10px;
             padding: variaveis.$space-md;
             @media(min-width:750px){
@@ -253,6 +260,16 @@
                 &:hover{
                     background-color: #ffffff78;
                 }
+            }
+            .texto-divisor-ou{
+                text-align: center;
+                @include variaveis.fontePadraoSite;
+                font-size: variaveis.$font-size-sm;
+                margin:variaveis.$space-md 0;
+            }
+            .login-google{
+                display: flex;
+                justify-content: center;
             }
         }
     }

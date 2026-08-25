@@ -27,6 +27,8 @@ defineExpose({
 })
 </script>
 <style lang="scss" scoped>
+@use "../components-scss/variaveis.scss";
+
     .container-popup{
         display: flex;
         justify-content: center;
@@ -42,6 +44,8 @@ defineExpose({
             bottom: 30px;
             width: 20%;
             border-radius: 10px;
+            font-size: variaveis.$font-size-sm;
+            @include variaveis.fontePadraoSite;
         }
     }
 

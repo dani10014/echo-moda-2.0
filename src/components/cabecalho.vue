@@ -49,7 +49,7 @@
             display: flex;
             gap: variaveis.$space-md;
             .botao-logar{
-                @include variaveis.padraoBotao;
+                @include variaveis.botoesAuth;
                 @include variaveis.fontePadraoSite;
                 cursor: pointer;
             }
@@ -58,7 +58,7 @@
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: center;
+                justify-content: space-around;
                 gap: 5px;
                 background-color: inherit;
                 border: none;
