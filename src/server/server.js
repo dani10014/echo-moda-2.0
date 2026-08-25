@@ -5,10 +5,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { Resend } from 'resend';
-import { gerarToken } from './services/auth.js';
-import { verificarToken } from './services/auth.js';
-import { criarHash } from './services/auth.js';
-import { compararSenha } from './services/auth.js';
+import { gerarToken } from '../services/auth.js';
+import { verificarToken } from '../services/auth.js';
+import { criarHash } from '../services/auth.js';
+import { compararSenha } from '../services/auth.js';
 import rateLimit from 'express-rate-limit';
 
 dotenv.config();
