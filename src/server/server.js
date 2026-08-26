@@ -186,10 +186,14 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
         const picture = payload['picture'];
         
         const criarUser = await prisma.usuarios.upsert({
-            data:{
-                id:userGoogleId,
+            where:{email:email}
+            update:{
                 nome:name,
+            }
+            create:{
+                id:userGoogleId,
                 email:email,
+                nome:name
             }
         })
         
