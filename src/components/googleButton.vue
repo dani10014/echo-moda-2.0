@@ -24,7 +24,7 @@
                     method:"Post",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
-                        token:response,
+                        token:response.credential,
                     })
                 })
                 
