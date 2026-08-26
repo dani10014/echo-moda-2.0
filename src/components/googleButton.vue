@@ -21,7 +21,7 @@
         if(response){
             try{
                 const resultValidacao = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-google",{
-                    method:"Post",
+                    method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
                         token:response.credential,

@@ -165,14 +165,14 @@ async function compararSenha(senhaPura, senhaComHash) {
     return await bcrypt.compare(senhaPura, senhaComHash);
 }
 
-app.post('/api/verificar-google', async (req, res) => {
-    const {token} = req.body;
-
-    if (!token) {
-        return res.status(400).json({ error: 'Token é obrigatório.' });
-    }
-
+app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
     try {
+        const {token} = req.body;
+        
+        if (!token) {
+            return res.status(400).json({ error: 'Token é obrigatório.' });
+        }
+        
         const dadosUsuario = await client.verifyIdToken({
             idToken: token,
             audience: process.env.VITE_GOOGLE_CLIENT_ID,
