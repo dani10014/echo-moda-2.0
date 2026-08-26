@@ -172,8 +172,8 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
         if (!token) {
             return res.status(400).json({ error: 'Token é obrigatório.' });
         }
-        
-        const dadosUsuario = await client.verifyIdToken({
+
+        const ticket = await client.verifyIdToken({
             idToken: token,
             audience: process.env.VITE_GOOGLE_CLIENT_ID,
         });

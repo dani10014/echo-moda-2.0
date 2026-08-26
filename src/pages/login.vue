@@ -82,7 +82,7 @@
                 dadosCorretos.value = true;
 
                 try{
-                    const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/enviar-codigo",{
+                    const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
                         method:"POST",
                         headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({
@@ -113,7 +113,7 @@
                 let nome:string = "Dijalma Duarte Fleitas"; 
 
                 try{
-                    const resposta = await fetch("https://ecomerce-echomoda.onrender.com/api/verificar-cadastro",{
+                    const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-cadastro",{
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
