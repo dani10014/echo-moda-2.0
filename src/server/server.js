@@ -65,11 +65,12 @@ app.use(cors({
 
 app.use(express.json({ limit: "1mb" }));
 
-const client = new MercadoPagoConfig({
+const clientMercadoPago = new MercadoPagoConfig({
     accessToken: process.env.ACCESS_TOKEN,
     options: { timeout: 5000 }
 });
-const payment = new Payment(client);
+
+const payment = new Payment(clientMercadoPago);
 
 BigInt.prototype.toJSON = function() {
     return this.toString();
