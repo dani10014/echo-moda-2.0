@@ -6,6 +6,9 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import { Resend } from 'resend';
 import rateLimit from 'express-rate-limit';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
 
@@ -13,12 +16,8 @@ const prisma = new PrismaClient();
 const app = express();
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5500";
 const allowedOrigins = [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "http://localhost:5174",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://echo-moda-2-0.vercel.app"
+    process.env.URL_DEV.split(',').map(url => url.trim())
+    process.env.URL_PRODUCTION
 ];
 const resend = new Resend(process.env.RESEND_API_KEY);
 const PORT = process.env.PORT || 3000;
@@ -31,6 +30,8 @@ const COOKIE_OPTIONS = {
     path: '/'
 };
 
+const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
+
 const limitadorAuth = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 10,
@@ -38,6 +39,7 @@ const limitadorAuth = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+
 const limitadorGeral = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 150,
@@ -60,10 +62,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
-
-if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL);
-}
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -104,8 +102,6 @@ function validarDadosUsuario(dados) {
 function sanitizarCPF(cpf) {
     return cpf.replace(/\D/g, "");
 }
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -121,6 +117,7 @@ function gerarToken(usuario){
     
     return jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
 }
+
 function extrairTokenDeCookie(cookieHeader) {
     if (!cookieHeader) return null;
     return cookieHeader.split(';').reduce((token, cookie) => {
@@ -168,19 +165,35 @@ async function compararSenha(senhaPura, senhaComHash) {
 }
 
 app.post('/api/verificar-google', async (req, res) => {
-    const { token} = req.body;
+    const {token} = req.body;
 
     if (!token) {
         return res.status(400).json({ error: 'Token é obrigatório.' });
     }
 
     try {
-        const dadosUsuario = await verificarTokenGoogle(token);
-
-    // Lógica da aplicação: Buscar/criar usuário no banco (ex: Prisma)
-    // e retornar o JWT de sessão próprio da sua aplicação.
+        const dadosUsuario = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.VITE_GOOGLE_CLIENT_ID,
+        });
         
-        return res.json({ status: 'sucesso', user: dadosUsuario });
+        const payload = ticket.getPayload();
+
+        const userGoogleId = payload['sub'];
+        const email = payload['email'];
+        const name = payload['name'];
+        const picture = payload['picture'];
+        
+        const criarUser = await prisma.usuarios.upsert({
+            data:{
+                id:userGoogleId,
+                nome:name,
+                email:email,
+            }
+        })
+        
+        return res.status(200).json({Mensagem:"Usuario criado com sucesso",token:gerarToken(criarUser)})
+
     }catch (error) {
         return res.status(401).json({ error: error.message });
     }
