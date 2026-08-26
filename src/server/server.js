@@ -16,7 +16,7 @@ const prisma = new PrismaClient();
 const app = express();
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5500";
 const allowedOrigins = [
-    process.env.URL_DEV.split(',').map(url => url.trim())
+    process.env.URL_DEV.split(',').map(url => url.trim()),
     process.env.URL_PRODUCTION
 ];
 const resend = new Resend(process.env.RESEND_API_KEY);
