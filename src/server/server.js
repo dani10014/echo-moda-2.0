@@ -180,7 +180,6 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
         
         const payload = ticket.getPayload();
 
-        const userGoogleId = payload['sub'];
         const email = payload['email'];
         const name = payload['name'];
         const picture = payload['picture'];
@@ -191,7 +190,6 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
                 nome:name,
             },
             create:{
-                id:userGoogleId,
                 email:email,
                 nome:name
             }
