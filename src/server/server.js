@@ -194,8 +194,16 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
                 nome:name
             }
         });
-        
-        return res.status(200).json({Mensagem:"Usuario criado com sucesso",token:gerarToken(criarUser)})
+        const tokenUsuario = gerarToken(criarUser);
+
+        res.cokie("authToken",tokenUsuario,{
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 
+        })
+
+        return res.status(200).json({Mensagem:"Usuario criado com sucesso"})
 
     }catch (error) {
         return res.status(401).json({ error: error.message });

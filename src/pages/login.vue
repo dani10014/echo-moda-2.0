@@ -27,7 +27,10 @@
                 </div>
                 <p class="texto-divisor-ou">Ou</p>
                 <div class="login-google">
-                    <googleButton/>
+                    <googleButton 
+                        @sucesso = "loginGoogleSucesso"
+                        @erro = "loginGoogleErro"
+                    />
                 </div>
                 <div v-if="dadosCorretos === true" class="container-loading">
                     <loading/>
@@ -44,7 +47,7 @@
     import { useRouter } from 'vue-router';
     import Popup from "../components/popup.vue";
     import googleButton from '@/components/googleButton.vue';
-
+    
     const router  = useRouter();
 
     let form = reactive({
@@ -75,6 +78,17 @@
     const voltarTelaLogin = () =>{
         esqueciSenha.value = false
     } 
+    const loginGoogleSucesso = (() => {
+        PopupRef.value?.exibirPopUp("Logado com sucesso")
+
+        setTimeout(()=>{
+            router.push("/logedPage")
+        },500)
+    })
+
+    const loginGoogleErro = (() => {
+        PopupRef.value?.exibirPopUp("Erro ao logar,tente novamente");
+    })
 
     const Logar = async () =>{
         if(esqueciSenha.value === true){

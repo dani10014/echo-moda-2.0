@@ -2,17 +2,23 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeViwe from "../pages/home-view.vue";
 import LoginView from "../pages/login.vue";
+import LoggedPage from '../pages/logged-page.vue';
 
 const routes = [
   {
     path:"/",
     name:"Home",
-    component:HomeViwe
+    component:HomeViwe,
   },
   {
     path:"/login",
     name:"Login",
     component:LoginView,
+  },
+  {
+    path:"/logedPage",
+    name:"Loged",
+    component:LoggedPage,
   }
 ]
 
