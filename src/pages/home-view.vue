@@ -65,7 +65,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
-let menuDropEstaAtivo = ref(false);
+const menuDropEstaAtivo = ref(false);
 
 const ativarMenuDrop = () =>{
     menuDropEstaAtivo.value = !menuDropEstaAtivo.value;

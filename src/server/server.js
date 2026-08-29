@@ -14,7 +14,6 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5500";
 const allowedOrigins = [
     process.env.URL_DEV,
     process.env.URL_PRODUCTION
@@ -182,7 +181,7 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
 
         const email = payload['email'];
         const name = payload['name'];
-        const picture = payload['picture'];
+        const _picture = payload['picture'];
         
         const criarUser = await prisma.usuarios.upsert({
             where:{email:email},
@@ -194,15 +193,11 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
                 nome:name
             }
         });
+
         const tokenUsuario = gerarToken(criarUser);
 
-        res.cokie("authToken",tokenUsuario,{
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 
-        })
-
+        res.cookie("AuthToken", tokenUsuario, COOKIE_OPTIONS);
+        
         return res.status(200).json({Mensagem:"Usuario criado com sucesso"})
 
     }catch (error) {
@@ -228,22 +223,28 @@ app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
 
         let valorTotal = 0;
 
-        itens.forEach(item => {
+        for(let item of itens){
             const produtoBanco = resultado.find(produto => Number(produto.id) === Number(item.id));
+
+            if(!produtoBanco){
+                return res.status(400).json({Mensagem:"Produto inexistente no banco de dados"})
+            }
 
             valorTotal += produtoBanco.preco * item.quantidade;
 
-        })
+        }
             return res.status(200).json({sucesso:true,total:valorTotal})
 
-    }catch(erro){
-        console.error("Erro ao buscar produtos para pagamento:", erro);
-        return res.status(500).json({ sucesso: false, erro: "Erro ao buscar produtos para pagamento" });
-    }
-})
-app.post("/api/criar-pagamento",limitadorGeral, async (req, res) => {
+        }catch(erro){
+            console.error("Erro ao buscar produtos para pagamento:", erro);
+            return res.status(500).json({ sucesso: false, erro: "Erro ao buscar produtos para pagamento" });
+        }
+    });
+app.post("/api/criar-pagamento",limitadorGeral,verificarToken, async (req, res) => {
     try {
-        const { email, nome, cpf, precoTotal,idUser } = req.body;
+        const { email, nome, cpf, precoTotal} = req.body;
+        const idUser = req.usuario.id;
+
         const erros = validarDadosUsuario({ email, nome, cpf, precoTotal });
 
         if (erros.length > 0) {
@@ -316,9 +317,9 @@ app.post("/api/criar-pagamento",limitadorGeral, async (req, res) => {
 });
 app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
     try{
-        const {nome,email,senha} = req.body;
+        const {email} = req.body;
 
-        if(!nome || !email || !senha){
+        if(!email){
             return res.status(400).json({ erro: "Dados incompletos" });
         }
         
@@ -327,8 +328,9 @@ app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
                 email:email.trim()
             }
         })
+
         if(usuario){
-            return res.status(200).json({mensagem:"usuario existe no banco",usuario})
+            return res.status(200).json({mensagem:"usuario existe no banco"})
             
         }else{
             return res.status(409).json({mensagem:"Usuario não existe no banco"})
@@ -347,7 +349,7 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
             res.status(400).json({mensagem:"Dados invalidos"})
             return
         }
-        if(senha.trim().length !== 8){
+        if(senha.trim().length < 8){
             return res.status(400).json({erro:"Tamanho de senha incorreta"});
         }
         const resultado = await prisma.usuarios.findUnique({
@@ -366,7 +368,7 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
             const { senha: _, ...usuarioSemSenha } = resultado;
             try {
                 const token = gerarToken(usuarioSemSenha);
-                res.cookie('token', token, COOKIE_OPTIONS);
+                res.cookie('AuthToken', token, COOKIE_OPTIONS);
                 return res.status(200).json({ sucesso: true, usuario: usuarioSemSenha, token: token });
             } catch (tokenError) {
                 console.error('Erro ao gerar token:', tokenError);
@@ -442,18 +444,12 @@ app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
         if (/\d/.test(nome)) {
             return res.status(400).json({ erro: "O nome não pode conter números." });
         }
-
-        const senhaEhNumero = /^\d+$/.test(String(senha)); 
-
-        if (!senhaEhNumero) {
-            return res.status(400).json({ sucesso: false, erro: "A senha deve conter apenas números." });
-        }
         
         if(nome.trim().length > 32){
             return res.status(400).json({erro:"Nome muito extenso"});
         }
 
-        if(senha.length !== 8){
+        if(senha.length < 8 ){
             return res.status(400).json({erro:"Tamanho de senha incorreta"})
         }
             const novoUsuario = await prisma.usuarios.create({
@@ -466,8 +462,8 @@ app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
             const {senha: _senha,...usuarioSemSenha} = novoUsuario
             try {
                 const token = gerarToken(usuarioSemSenha);
-                res.cookie('token', token, COOKIE_OPTIONS);
-                return res.status(201).json({ sucesso: true, mensagem: "Sucesso", novo: usuarioSemSenha, token: token });
+                res.cookie('AuthToken', token, COOKIE_OPTIONS);
+                return res.status(201).json({ sucesso: true, mensagem: "Sucesso,usuario criado com sucesso",});
             } catch (tokenError) {
                 console.error('Erro ao gerar token no cadastro:', tokenError);
                 return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
@@ -489,9 +485,10 @@ app.get("/api/buscar-produtos",limitadorGeral, async (req, res) => {
         return res.status(500).json({ erro: "Erro ao buscar produtos"});
     }
 })
-app.post("/api/salvar-favoritos",limitadorGeral, async (req, res) => {
+app.post("/api/salvar-favoritos",limitadorGeral,verificarToken,async (req, res) => {
     try {
-        const { idclient, idproduto } = req.body;
+        const { idproduto } = req.body;
+        const idclient = req.usuario.id;
 
         if (!idclient || idproduto == null) {
             return res.status(400).json({ resultado: "Dados de favorito inválidos" });
@@ -515,9 +512,10 @@ app.post("/api/salvar-favoritos",limitadorGeral, async (req, res) => {
         return res.status(500).json({ resultado: "Erro ao conectar no servidor"});
     }
 });
-app.delete("/api/remover-favoritos",limitadorGeral, async (req,res) =>{
+app.delete("/api/remover-favoritos",limitadorGeral,verificarToken, async (req,res) =>{
     try{
-        const {idclient,idproduto} = req.body
+        const {idproduto} = req.body
+        const idclient = req.usuario.id;
         
         if(!idclient || !idproduto){
             return res.status(400).json({mensagem:"Erro no servidor"})
@@ -537,9 +535,9 @@ app.delete("/api/remover-favoritos",limitadorGeral, async (req,res) =>{
         return res.status(500).json({mensagem:"Erro ao conversar com o servidor"})
     }
 })
-app.get("/api/buscar-favoritos",limitadorGeral, async (req,res) =>{
+app.get("/api/buscar-favoritos",limitadorGeral,verificarToken, async (req,res) =>{
     try{
-        const {idclient} = req.query
+        const idclient = req.usuario.id;
         
         if(!idclient){
             return res.status(400).json({mensagem:"Sem id do cliente"})
@@ -553,12 +551,14 @@ app.get("/api/buscar-favoritos",limitadorGeral, async (req,res) =>{
         return res.status(200).json(resultado)
 
     }catch(erro){
+        console.error("Erro no servidor",erro)
         return res.status(500).json({mensagem:"Erro no servidor"})
     }
 })
 app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,res) =>{
     try{
-        const{idUser,nomeNovo,novoEmail,novoNumero} = req.body
+        const{nomeNovo,novoEmail,novoNumero} = req.body
+        const idUser = req.usuario.id;
 
         if(!idUser || !nomeNovo){
             return res.status(400).json("Nenhum id e nenhum nome recebido");
@@ -589,6 +589,7 @@ app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,
                 numero:novoNumero,
             }
         })
+
         const {senha,id,...respostaSemSenha} = resposta
         return res.status(200).json({Mensagem:"Nome atualizado",Resultado:respostaSemSenha})
 
@@ -599,8 +600,9 @@ app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,
 })
 app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken, async (req,res) =>{
     try{
-        const{cep,numero,rua,bairro,cidade,estado,complemento,idUser} = req.body;
-        
+        let{cep,numero,rua,bairro,cidade,estado,complemento} = req.body;
+        const idUser = req.usuario.id;
+
         if (!idUser) {
             return res.status(400).json({ erro: "ID do usuário é obrigatório." });
         }
@@ -644,9 +646,9 @@ app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken, async (req,res)
         return res.status(500).json({ sucesso: false, erro: "Erro ao atualizar endereço" });
     }
 })
-app.get("/api/buscar-endereco/:idUser", limitadorGeral, verificarToken, async (req, res) => {
+app.get("/api/buscar-endereco", limitadorGeral, verificarToken, async (req, res) => {
     try{
-        const{idUser} = req.params;
+        const idUser = req.usuario.id;
 
         if(!idUser){
             return res.status(400).json({erro:"Id do usuario não recebido"})
@@ -661,23 +663,28 @@ app.get("/api/buscar-endereco/:idUser", limitadorGeral, verificarToken, async (r
         return res.status(200).json({sucesso:true,endereco:resultadoBuscaEndereco})
 
     }catch(erro){
-        console.error("Erro no servidor");
+        console.error("Erro no servidor",erro);
         return res.status(500).json({sucesso:false,erro:"Erro no servidor"})
     }
 })
-app.get("/api/buscar-historico/:iduser" ,limitadorGeral ,verificarToken, async (req,res) =>{
-    const {iduser} = req.params
+app.get("/api/buscar-historico" ,limitadorGeral ,verificarToken, async (req,res) =>{
+    try{
+        const iduser = req.usuario.id
 
-    if(!iduser){
-        return res.status(400).json({erro:"Id do usuario não recebido"})
-    }
-
-    const resultadoBuscaHistorico = await prisma.pedidos.findMany({
-        where:{
-            usuario_id:iduser
+        if(!iduser){
+            return res.status(400).json({erro:"Id do usuario não recebido"})
         }
-    })
-        return res.status(200).json({Resposta:resultadoBuscaHistorico || []});
+
+        const resultadoBuscaHistorico = await prisma.pedidos.findMany({
+            where:{
+                usuario_id:iduser
+            }
+        })
+            return res.status(200).json({Resposta:resultadoBuscaHistorico || []});
+    }catch(erro){
+        console.error("Erro ao buscar histórico:", erro);
+        return res.status(500).json({ erro: "Erro interno no servidor ao buscar histórico" });
+    }
 })
 app.get("/api/validar-sessao", verificarToken, (req, res) => {
     return res.status(200).json({ sucesso: true, usuario: req.usuario });

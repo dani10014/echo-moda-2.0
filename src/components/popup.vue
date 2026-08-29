@@ -10,8 +10,8 @@
 <script setup lang="ts">
 import {ref} from "vue";
 
-    let textoPopUp = ref("");
-    let popupAtivo = ref(false);
+    const textoPopUp = ref("");
+    const popupAtivo = ref(false);
 
     const exibirPopUp = ((mensagem:string) => {
         textoPopUp.value = mensagem;

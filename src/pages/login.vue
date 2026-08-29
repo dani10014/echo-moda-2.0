@@ -50,17 +50,17 @@
     
     const router  = useRouter();
 
-    let form = reactive({
+    const form = reactive({
         email:"",
         senha:"",
     })
     
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    let resultEmailErro = ref(false);
-    let resultSenhaErro = ref(false);
-    let esqueciSenha = ref(false);
-    let dadosCorretos = ref(false);
+    const resultEmailErro = ref(false);
+    const resultSenhaErro = ref(false);
+    const esqueciSenha = ref(false);
+    const dadosCorretos = ref(false);
     const PopupRef = ref<any>(null);
 
     const validarEmail = () => {
@@ -124,16 +124,13 @@
 
                 dadosCorretos.value = true;
 
-                let nome:string = "Dijalma Duarte Fleitas"; 
 
                 try{
                     const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-cadastro",{
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
-                        nome:nome,
                         email:form.email,
-                        senha:form.senha
                     })
                 })
 
