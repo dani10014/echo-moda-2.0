@@ -11,8 +11,10 @@
         </div>
         <div class="container-card-login">
             <div class="card">
-                <LoginTelaInicial v-if="loginInicialAtivo" @irParaTelaEsqueciSenha="mudarTelaParaEsqueciSenha"/>
-                <TelaEsqueciSenha v-if="telaEsqueciSenhaAtiva" @voltarAoLoginInicial="voltarTelaLoginInicial"/>
+                <LoginTelaInicial v-if="loginInicialAtivo" @irParaTelaEsqueciSenha="mudarTelaParaEsqueciSenha" @telaVerificarCodigo="irParaTelaVerificacaoCodigo" @irParaTelaDeCadastro="irParaTelaDeCadastro"/>
+                <TelaEsqueciSenha v-if="telaEsqueciSenhaAtiva" @voltarAoLoginInicial="voltarTelaLoginInicial" @irParaVerificacao="irParaTelaVerificacaoCodigo"/>
+                <TelaVerificarCodigo v-if="verificarCodigoAtivo"/>
+                <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo"/>
             </div>
         </div>
     </main>
@@ -23,11 +25,14 @@
     import { useRouter } from 'vue-router';
     import LoginTelaInicial from "../components/loginCampo.vue";
     import TelaEsqueciSenha from "../components/telaEsqueciSenha.vue";
-
+    import TelaVerificarCodigo from '@/components/telaVerificarCodigo.vue';
+    import telaCriarConta from "../components/criarConta.vue";
 
     const router = useRouter();
     const loginInicialAtivo = ref(true);
     const telaEsqueciSenhaAtiva = ref(false);
+    const verificarCodigoAtivo = ref(false);
+    const telaCriarContaAtivo = ref(false);
 
     const mudarTelaParaEsqueciSenha = () =>{
         loginInicialAtivo.value = false;
@@ -37,7 +42,16 @@
         loginInicialAtivo.value = true;
         telaEsqueciSenhaAtiva.value = false;
     }
-    
+    const irParaTelaVerificacaoCodigo = () =>{
+        loginInicialAtivo.value = false;
+        telaCriarContaAtivo.value = false;
+        telaEsqueciSenhaAtiva.value = false;
+        verificarCodigoAtivo.value = true;
+    }
+    const irParaTelaDeCadastro = () => {
+        loginInicialAtivo.value = false;
+        telaCriarContaAtivo.value = true;
+    }
     const irParaHome = () =>{
         router.push("/");
     }
@@ -86,10 +100,10 @@
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;
-            width: 80%;
-            top: 30px;
+            width: 70%;
+            top: 10px;
             border-radius: 10px;
-            padding: variaveis.$space-md variaveis.$space-xl;
+            padding: variaveis.$space-md variaveis.$space-md;
             @media(min-width:750px){
                 width: 40%;
             }

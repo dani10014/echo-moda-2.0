@@ -6,8 +6,10 @@
 
     <input v-model="form.senha" type="text" @keyup="validarSenha" placeholder="Senha">
     <span v-if="resultSenhaErro && form.senha.length > 0" class="aviso-campo-invalido">Senha com minimo de 8 caracteres</span>
-
-    <a href="#" @click="irParaTelaEsqueciSenha" class="btn-esqueci-senha">Esqueci a senha</a>
+    <div class="botoes-esquecer-criar-conta">
+        <a href="#" @click="irParaTelaEsqueciSenha" class="btn-esqueci-senha">Esqueci a senha</a>
+        <a href="#" @click="irParaTelaDeCadastro" class="btn-criar-conta">Não possui conta</a>
+    </div>
     <div class="botao-acessar">
         <button class="btn-acessar" @click="Logar">Entrar</button>
     </div>
@@ -44,7 +46,7 @@
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const router = useRouter()
     
-    const mudarTela = defineEmits(['irParaTelaEsqueciSenha']);
+    const mudarTela = defineEmits(['irParaTelaEsqueciSenha','telaVerificarCodigo','irParaTelaDeCadastro']);
 
     const validarEmail = () => {
         resultEmailErro.value = !regex.test(form.email);
@@ -68,6 +70,11 @@
     const irParaTelaEsqueciSenha = (()=>{
         mudarTela('irParaTelaEsqueciSenha');
     })
+    
+    const irParaTelaDeCadastro = () =>{
+        mudarTela("irParaTelaDeCadastro");
+    }
+
 
     const Logar = async () => {
         if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email) && resultSenhaErro.value === false && form.senha.trim().length >= 8 ){
@@ -77,12 +84,28 @@
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
-                        email:form.email,
+                        email:form.email.trim,
                     })
                 })
 
                 if(resposta.status === 200){
-                    PopupRef.value?.exibirPopUp("Prosseguindo para verificação");
+                    try{
+                        const respostaLogin = await fetch("https://echo-moda-2-0.onrender.com/api/logar",{
+                            method:"POST",
+                            headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({
+                                email:form.email.trim(),
+                                senha:form.senha,
+                            })
+                        })
+
+                        if(respostaLogin.status === 200){
+                            PopupRef.value?.exibirPopUp("Seguindo para verificação");
+                            mudarTela("telaVerificarCodigo");
+                        }
+                    }catch(erro){
+                        PopupRef.value?.exibirPopUp("Erro no servidor")
+                    }
                 }
 
                 if(resposta.status === 400){
@@ -141,6 +164,20 @@
                 @include variaveis.padraoBotao
             }
     }
+    .botoes-esquecer-criar-conta{
+        display: flex;
+        justify-content: space-between;
+        margin-top: variaveis.$space-sm;
+        align-items: center;
+        .btn-criar-conta{
+            text-decoration: none;
+            font-size: variaveis.$font-size-sm;
+            color: #fff;
+        }
+        .btn-esqueci-senha{
+            font-size: variaveis.$font-size-sm;
+        }
+    }
     .container-loading{
         display: flex;
         left: 0;
@@ -151,10 +188,6 @@
         width: 100%;
         height: 100%;
         position: absolute;
-    }
-    .btn-esqueci-senha{
-        font-size: variaveis.$font-size-sm;
-        margin-top: variaveis.$space-sm;
     }
     .btn-voltar-tela-login{
         width: 5%;

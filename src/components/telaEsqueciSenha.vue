@@ -22,7 +22,7 @@
         email:"",
     })
 
-    const mudartela = defineEmits(['VoltarAoLoginInicial']);
+    const mudartela = defineEmits(['VoltarAoLoginInicial','irParaVerificacao']);
 
     const resultEmailErro = ref(false);
     const regex =  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,7 +47,9 @@
                     })
 
                     if(resposta.status === 200){
-                        alert("Codigo enviado")
+                        PopupRef.value?.exibirPopUp("Código enviado com sucesso")
+                        mudartela("irParaVerificacao");
+                        
                     }
                     if(resposta.status === 400){
                         alert("Erro")

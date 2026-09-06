@@ -37,6 +37,7 @@ $letter-spacing-sm: 0.08rem;
 $letter-spacing-md: 0.18rem;
 
 // Radius e sombras
+$radius-xs:5px;
 $radius-sm: 10px;
 $radius-md: 14px;
 $radius-lg: 24px;
@@ -46,14 +47,14 @@ $shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
 
 @mixin padraoBotao {
     padding: 15px;
-    border-radius: $radius-sm;
+    border-radius: $radius-xs;
     box-shadow: $shadow-soft;
     cursor: pointer;
     border: none;
 }
 @mixin botoesAuth {
     padding: 10px;
-    border-radius: $radius-sm;
+    border-radius: $radius-xs;
     box-shadow: $shadow-soft;
     cursor: pointer;
     border: none;
