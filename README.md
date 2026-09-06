@@ -1,71 +1,11 @@
-# vue-project
+**Echo Moda 2.0**
 
-This template should help get you started developing with Vue 3 in Vite.
+Decidi descontinuar a primeira versão do meu projeto Echo Moda para reconstruí-lo do absoluto zero, aplicando padrões de arquitetura e segurança de mercado muito mais maduros.Enquanto a primeira versão focava apenas no Javascript ES6+ e typescript, o Echo Moda 2.0 nasceu como uma aplicação Full Stack completa com o uso do framework **Vue.js** com **Eslint e Cypress**:
 
-## Recommended IDE Setup
+Back-end & Segurança: API RESTful construída do zero em Node.js com Express, utilizando **JWT** com cookies **HttpOnly** para autenticação segura, criptografia de senhas por **hash**, proteção contra DDoS com **RateLimit** e integração com a **Resend** para disparo de códigos por e-mail.Login e cadastro funcionando perfeitamente com todas as medidas de segurança.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Banco de Dados: Modelagem relacional estruturada do zero em **PostgreSQL**, garantindo integridade de dados e rastreabilidade total de usuários e requisições.
 
-## Recommended Browser Setup
+Front-end: Interfaces modernas e reativas desenvolvidas com **Vue.js** e **TypeScript**,uso de **router** para mudanças de telas.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Run End-to-End Tests with [Cypress](https://www.cypress.io/)
-
-```sh
-npm run test:e2e:dev
-```
-
-This runs the end-to-end tests against the Vite development server.
-It is much faster than the production build.
-
-But it's still recommended to test the production build with `test:e2e` before deploying (e.g. in CI environments):
-
-```sh
-npm run build
-npm run test:e2e
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
-# echo-moda-2.0
+Em breve sera adicionado mais funcionalidades.
