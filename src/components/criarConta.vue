@@ -1,4 +1,5 @@
 <template>
+    <button class="btn-voltar" @click="mudarTela('voltarTelaParaInicio')"><i class="fa-solid fa-arrow-left"></i></button>
     <h1>Cadastro</h1>
     
     <input type="text" v-model="form.nome" placeholder="Nome" @keyup="validarNome">
@@ -37,7 +38,7 @@
     const resultNomeErro = ref(false);
     const PopupRef = ref<any>(null);
     const loadingAtivo = ref(false);
-    const mudarTela = defineEmits(['irParaVerificacaoDeEmail'])
+    const mudarTela = defineEmits(['irParaVerificacaoDeEmail','voltarTelaParaInicio'])
     
     const router = useRouter();
 
@@ -73,7 +74,7 @@
                 PopupRef.value.exibirPopUp("Usuario com conta existente");
                 return
             }
-            if(respostaVerificaConta.status === 400){
+            if(respostaVerificaConta.status === 409){
                 try{
                     const resultadoEnviarCodigo = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
                         method:"POST",
@@ -84,6 +85,7 @@
                     })
                     if(resultadoEnviarCodigo.status === 200){
                         PopupRef.value.exibirPopUp("Codigo enviado");
+                        localStorage.setItem("emailUser",form.email.trim());
                         mudarTela("irParaVerificacaoDeEmail");
                     }
                     if(resultadoEnviarCodigo.status === 400){
@@ -153,5 +155,18 @@
         width: 100%;
         height: 100%;
         position: absolute;
+    }
+    .btn-voltar{
+        width: 5%;
+        height: 5%;
+        cursor: pointer;
+        border: none;
+        background-color: inherit;
+        color: #fff;
+        transition: all 0.3s ease-in-out;
+        border-radius: 10px;
+        &:hover{
+            background-color: #ffffff78;
+        }
     }
 </style>

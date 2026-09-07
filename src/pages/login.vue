@@ -4,6 +4,7 @@
             <cabecalho
                 textoBtn="Voltar"
                 @acao="irParaHome"
+                :menuDropAtivo="false"
             />
         </header>
         <div class="bg-login">
@@ -14,7 +15,7 @@
                 <LoginTelaInicial v-if="loginInicialAtivo" @irParaTelaEsqueciSenha="mudarTelaParaEsqueciSenha" @telaVerificarCodigo="irParaTelaVerificacaoCodigo" @irParaTelaDeCadastro="irParaTelaDeCadastro"/>
                 <TelaEsqueciSenha v-if="telaEsqueciSenhaAtiva" @voltarAoLoginInicial="voltarTelaLoginInicial" @irParaVerificacao="irParaTelaVerificacaoCodigo"/>
                 <TelaVerificarCodigo v-if="verificarCodigoAtivo"/>
-                <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo"/>
+                <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo" @voltarTelaParaInicio="voltarTelaLoginInicial"/>
             </div>
         </div>
     </main>
@@ -40,6 +41,8 @@
     }
     const voltarTelaLoginInicial = () =>{
         loginInicialAtivo.value = true;
+        verificarCodigoAtivo.value = false;
+        telaCriarContaAtivo.value = false;
         telaEsqueciSenhaAtiva.value = false;
     }
     const irParaTelaVerificacaoCodigo = () =>{

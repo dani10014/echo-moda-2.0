@@ -75,7 +75,6 @@
         mudarTela("irParaTelaDeCadastro");
     }
 
-
     const Logar = async () => {
         if(resultEmailErro.value === false && form.email.trim().length > 1 && regex.test(form.email) && resultSenhaErro.value === false && form.senha.trim().length >= 8 ){
             dadosCorretos.value = true;
@@ -84,7 +83,7 @@
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
-                        email:form.email.trim,
+                        email:form.email.trim(),
                     })
                 })
 

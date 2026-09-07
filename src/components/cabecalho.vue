@@ -2,7 +2,7 @@
     <div class="cabecalho">
         <h4 class="cabecalho_nome-loja">Echo Moda</h4>
         <div class="container-botoes-cabecalho">
-            <button @click = "$emit('abrirMenu')" class="btn-menu">
+            <button @click = "$emit('abrirMenu')" class="btn-menu" v-if="menuDropAtivo">
                 <span>
                 </span>
                 <span>
@@ -20,10 +20,11 @@
 
     defineProps<{
         textoBtn:string;
+        menuDropAtivo:boolean;
     }>()
     
     defineEmits(['acao','abrirMenu'])
-
+    
 </script>
 <style lang="scss" scoped>
     @use "../components-scss/variaveis.scss";

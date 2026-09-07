@@ -5,6 +5,7 @@
                 textoBtn="Entrar"
                 @abrirMenu = "ativarMenuDrop"
                 @acao="irParaLogin"
+                :menuDropAtivo="true"
             />
         </header>
         <section class="hero-section">
