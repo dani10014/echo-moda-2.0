@@ -9,3 +9,12 @@ Banco de Dados: Modelagem relacional estruturada do zero em **PostgreSQL**, gara
 Front-end: Interfaces modernas e reativas desenvolvidas com **Vue.js** e **TypeScript**,uso de **router** para mudanças de telas.
 
 Em breve sera adicionado mais funcionalidades.
+
+**Imagens do projeto**
+
+<img width="1280" height="687" alt="Captura de tela_2026-09-05_20-14-37" src="https://github.com/user-attachments/assets/570d2027-2a4f-4d9a-8a4e-86c9faa27d2b" />
+<img width="1280" height="687" alt="Captura de tela_2026-09-05_20-14-44" src="https://github.com/user-attachments/assets/59dea673-b85f-48c2-a94a-41d177ed19d0" />
+<img width="1280" height="687" alt="Captura de tela_2026-09-05_20-14-52" src="https://github.com/user-attachments/assets/1c910fd5-ce31-443e-84b3-0273ca939f0a" />
+<img width="1280" height="687" alt="Captura de tela_2026-09-05_20-14-25" src="https://github.com/user-attachments/assets/eab867d1-c4c5-462f-8dde-3cc0814ba050" />
+
+
