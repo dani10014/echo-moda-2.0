@@ -9,14 +9,31 @@
         <input type="text">
         <input type="text">
     </div>
+    <span>Código inválido</span>
     <div class="botao-acessar">
         <button class="btn-acessar" @click="">Prosseguir</button>
     </div>
     <span>Verifique sua caixa de span ou lixeira</span>
 </template>
 <script setup lang="ts">
+import { reactive,ref } from 'vue';
     
     const emailuser = localStorage.getItem("emailUser");
+
+    const espacoCodigo = reactive({
+        codigo1:"",
+        codigo2:"",
+        codigo3:"",
+        codigo4:"",
+        codigo5:"",
+        codigo6:"",
+    })
+
+    const codigoInvalido = ref(false)
+
+    if(!espacoCodigo.codigo1 || !espacoCodigo.codigo2 || !espacoCodigo.codigo3 || espacoCodigo.codigo4 || !espacoCodigo.codigo5 || !espacoCodigo.codigo6){
+        codigoInvalido.value = true;
+    } 
 
 </script>
 <style lang="scss" scoped>

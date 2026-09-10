@@ -32,8 +32,6 @@
     import { useRouter } from 'vue-router';
     import Popup from "../components/popup.vue";
 
-
-
     const form = reactive({
         email:"",
         senha:"",
@@ -102,13 +100,17 @@
                             PopupRef.value?.exibirPopUp("Seguindo para verificação");
                             mudarTela("telaVerificarCodigo");
                         }
+
+                        if(respostaLogin.status === 400){
+                            PopupRef.value?.exibirPopUp("Email ou senha incorréta");
+                            return
+                        }
                     }catch(erro){
                         PopupRef.value?.exibirPopUp("Erro no servidor")
                     }
                 }
-
                 if(resposta.status === 400){
-                    PopupRef.value?.exibirPopUp("Email ou senha incorreta");
+                    PopupRef.value?.exibirPopUp("Email ou senha incorréta");
                 }
                 }catch(erro){
                     PopupRef.value?.exibirPopUp("Ocorreu um erro");

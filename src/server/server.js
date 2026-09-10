@@ -161,6 +161,10 @@ async function criarHash(senhaPura) {
 }
 
 async function compararSenha(senhaPura, senhaComHash) {
+    if(!senhaPura || !senhaComHash){
+        return false;
+    }
+    
     return await bcrypt.compare(senhaPura, senhaComHash);
 }
 
@@ -358,10 +362,22 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
             }
         });
         
-        const senhaValida = resultado ? await compararSenha(senha, resultado.senha) : false;
+        if(!resultado){
+            return res.status(400).json({Mensagem:"Email ou senha inválidos"}   )
+        }
 
-        if (!resultado || !senhaValida) {
-            return res.status(401).json({ sucesso: false, erro: "E-mail ou senha inválidos" });
+        if (!resultado.senha) {
+            return res.status(400).json({ 
+                sucesso: false, 
+                precisaCadastrarSenha: true, 
+                erro: "Esta conta foi criada via Google. Deseja definir uma senha por e-mail?" 
+            });
+        }
+
+        const senhaValida = resultado ? await compararSenha(senha, resultado.senha) : false;
+        
+        if (!senhaValida) {
+            return res.status(400).json({ sucesso: false, erro: "E-mail ou senha inválidos" });
         }
 
         if(resultado && senhaValida){
