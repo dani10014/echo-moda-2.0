@@ -81,7 +81,7 @@
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({
-                        email:form.email.trim(),
+                        email:form.email.trim().toLowerCase(),
                     })
                 })
 
@@ -91,18 +91,25 @@
                             method:"POST",
                             headers:{"Content-Type":"application/json"},
                             body:JSON.stringify({
-                                email:form.email.trim(),
-                                senha:form.senha,
+                                email:form.email.trim().toLowerCase(),
+                                senha:form.senha.trim(),
                             })
                         })
-
+                            const respostaServidor = await respostaLogin.json();
+                            
                         if(respostaLogin.status === 200){
                             PopupRef.value?.exibirPopUp("Seguindo para verificação");
                             mudarTela("telaVerificarCodigo");
                         }
-
                         if(respostaLogin.status === 400){
-                            PopupRef.value?.exibirPopUp("Email ou senha incorréta");
+                            PopupRef.value?.exibirPopUp("Email ou senha inválida");
+                            return
+                        }
+                        if(respostaLogin.status === 400 && respostaServidor.precisaCadastrarSenha){
+                            PopupRef.value?.exibirPopUp("Email ou senha inválida");
+                            setTimeout(() => {
+                                mudarTela("irParaTelaEsqueciSenha")
+                            }, 500)
                             return
                         }
                     }catch(erro){
@@ -110,7 +117,7 @@
                     }
                 }
                 if(resposta.status === 400){
-                    PopupRef.value?.exibirPopUp("Email ou senha incorréta");
+                    PopupRef.value?.exibirPopUp("Email ou senha inválida");
                 }
                 }catch(erro){
                     PopupRef.value?.exibirPopUp("Ocorreu um erro");

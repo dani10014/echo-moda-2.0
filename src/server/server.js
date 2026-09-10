@@ -164,7 +164,7 @@ async function compararSenha(senhaPura, senhaComHash) {
     if(!senhaPura || !senhaComHash){
         return false;
     }
-    
+
     return await bcrypt.compare(senhaPura, senhaComHash);
 }
 
@@ -337,7 +337,7 @@ app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
             return res.status(200).json({mensagem:"usuario existe no banco"})
             
         }else{
-            return res.status(409).json({mensagem:"Usuario não existe no banco"})
+            return res.status(400).json({mensagem:"Usuario não existe no banco"})
         }
 
     }catch(erro){
