@@ -4,7 +4,7 @@
     <input type="text" v-model="form.email" placeholder="Email" @keyup="validarEmail">
     <span v-if="resultEmailErro && form.email.length > 0" class="aviso-campo-invalido">Email incorreto</span>
 
-    <input v-model="form.senha" type="text" @keyup="validarSenha" placeholder="Senha">
+    <input v-model="form.senha" type="password" @keyup="validarSenha" placeholder="Senha">
     <span v-if="resultSenhaErro && form.senha.length > 0" class="aviso-campo-invalido">Senha com minimo de 8 caracteres</span>
     <div class="botoes-esquecer-criar-conta">
         <a href="#" @click="irParaTelaEsqueciSenha" class="btn-esqueci-senha">Esqueci a senha</a>
@@ -80,12 +80,14 @@
                     const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-cadastro",{
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
+                        credentials:"include",
                     body:JSON.stringify({
                         email:form.email.trim().toLowerCase(),
                     })
                 })
 
                 if(resposta.status === 200){
+                    sessionStorage.setItem("emailUser",form.email.trim().toLowerCase())
                     try{
                         const respostaLogin = await fetch("https://echo-moda-2-0.onrender.com/api/logar",{
                             method:"POST",
@@ -99,17 +101,19 @@
                             
                         if(respostaLogin.status === 200){
                             PopupRef.value?.exibirPopUp("Seguindo para verificação");
-                            mudarTela("telaVerificarCodigo");
-                        }
-                        if(respostaLogin.status === 400){
-                            PopupRef.value?.exibirPopUp("Email ou senha inválida");
-                            return
+                            setTimeout(()=>{
+                                mudarTela("telaVerificarCodigo");
+                            },500)
                         }
                         if(respostaLogin.status === 400 && respostaServidor.precisaCadastrarSenha){
                             PopupRef.value?.exibirPopUp("Email ou senha inválida");
                             setTimeout(() => {
                                 mudarTela("irParaTelaEsqueciSenha")
                             }, 500)
+                            return
+                        }
+                        if(respostaLogin.status === 400){
+                            PopupRef.value?.exibirPopUp("Email ou senha inválida");
                             return
                         }
                     }catch(erro){

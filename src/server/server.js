@@ -23,10 +23,15 @@ const PORT = process.env.PORT || 3000;
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    sameSite: 'none',
+    sameSite: 'strict',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/'
+};
+
+const TEMP_COOKIE_OPTIONS = {
+    ...COOKIE_OPTIONS,
+    maxAge: 15 * 60 * 1000,
 };
 
 const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
@@ -105,17 +110,28 @@ function sanitizarCPF(cpf) {
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
-function gerarToken(usuario){
+function gerarToken(usuario,tipo){
     if (!SECRET_KEY) {
         throw new Error('JWT_SECRET não configurado no ambiente');
     }
-    
+
     const payload = {
         id: usuario.id,
         email: usuario.email,
+        tipo:tipo
     };
     
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
+    if(tipo === "temp_resetPassword"){
+        return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' });
+    }
+    if(tipo === "temp_login"){
+        return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' });
+    }
+    if(tipo === "authLogin"){
+        return jwt.sign(payload, SECRET_KEY, { expiresIn: '7d' });
+    }else{
+        throw new Error("Erro ao gerar token");
+    }
 }
 
 function extrairTokenDeCookie(cookieHeader) {
@@ -123,7 +139,7 @@ function extrairTokenDeCookie(cookieHeader) {
     return cookieHeader.split(';').reduce((token, cookie) => {
 
         const [nome, valor] = cookie.trim().split('=');
-        if (nome === 'token' || nome === 'AuthToken') {
+        if (['token', 'AuthToken', 'authToken', 'loginVerification', 'temp_resetPassword'].includes(nome)) {
             return decodeURIComponent(valor || '');
         }
         return token;
@@ -131,7 +147,8 @@ function extrairTokenDeCookie(cookieHeader) {
     }, null);
 }
 
-function verificarToken(req,res,next){
+function verificarToken(tipoToken = 'authLogin'){
+    return (req,res,next,) =>{
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
 
@@ -148,11 +165,15 @@ function verificarToken(req,res,next){
             return res.status(403).json({ erro: 'Token inválido ou expirado.' });
         }
         
+        if(usuarioDecodificado.tipo !== tipoToken){
+            return res.status(403).json({ erro: 'Acesso negado: tipo de token incompatível com esta rota.' });
+        }
+
         req.usuario = usuarioDecodificado; 
         next();
     });
 }
-
+}
 const saltRounds = 10; 
 
 
@@ -348,14 +369,15 @@ app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
 app.post("/api/logar",limitadorAuth,async (req,res) => {
     try{
         const {email,senha} = req.body
-        
+
         if(!email || !senha){
-            res.status(400).json({mensagem:"Dados invalidos"})
-            return
+            return res.status(400).json({mensagem:"Dados invalidos"})
         }
+
         if(senha.trim().length < 8){
             return res.status(400).json({erro:"Tamanho de senha incorreta"});
         }
+
         const resultado = await prisma.usuarios.findUnique({
             where:{
                 email:email.trim(),
@@ -383,11 +405,10 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
         if(resultado && senhaValida){
             const { senha: _, ...usuarioSemSenha } = resultado;
             try {
-                const token = gerarToken(usuarioSemSenha);
-                res.cookie('AuthToken', token, COOKIE_OPTIONS);
-                return res.status(200).json({ sucesso: true, usuario: usuarioSemSenha, token: token });
+                const tokenTemporario = gerarToken(usuarioSemSenha,"temp_login");
+                res.cookie("loginVerification", tokenTemporario, TEMP_COOKIE_OPTIONS);
+                return res.status(200).json({ sucesso: true, usuario: usuarioSemSenha});
             } catch (tokenError) {
-                console.error('Erro ao gerar token:', tokenError);
                 return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
             }
         }
@@ -397,6 +418,24 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
         return res.status(500).json({ sucesso: false, erro: "Erro interno no servidor" });
     }
 })
+    /** Essa rota gera o token definitivo caso o user verique o email e possua o token temp */
+
+
+app.post("/api/authlogin",limitadorAuth,verificarToken('temp_login'),async (req,res) =>{
+    try{
+        
+        const usuario = req.usuario;
+
+        const token = gerarToken(usuario,"authLogin")
+
+        res.clearCookie("loginVerification", TEMP_COOKIE_OPTIONS);
+        return res.cookie("AuthToken",token,COOKIE_OPTIONS).status(200).json({ sucesso: true });
+
+    }catch(erro){
+
+    }
+})
+
 function gerarCodigoVerificacao() {
     return crypto.randomInt(100000, 999999).toString();
 }
@@ -416,11 +455,12 @@ app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
         const { email } = req.body;
         if (!email) return res.status(400).json({ erro: "E-mail necessário" });
 
+        const emailNormalizado = email.trim().toLowerCase();
         const codigo = gerarCodigoVerificacao();
         const expiraEm = Date.now() + (5 * 60 * 1000);
-        codigosTemporarios.set(email, { codigo, expiraEm });
+        codigosTemporarios.set(emailNormalizado, { codigo, expiraEm });
         
-        await enviarEmailVerificacao(email, codigo);
+        await enviarEmailVerificacao(emailNormalizado, codigo);
         
         return res.status(200).json({ mensagem: "Código enviado!" });
     } catch (erro) {
@@ -429,8 +469,53 @@ app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
     }
 });
 
-app.post("/api/verificar-codigo", limitadorAuth, (req, res) => {
+app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
+    const email = req.body.email?.trim().toLowerCase();
+    const codigo = String(req.body.codigo || "");
+    const fluxo = req.body.fluxo;
+
+    if(!email || !/^\d{6}$/.test(codigo) || !["login", "reset"].includes(fluxo)){
+        return res.status(400).json({ mensagem: "Código inválido" });
+    }
+
+    const registro = codigosTemporarios.get(email);
+    if (!registro || Date.now() > registro.expiraEm || registro.codigo !== codigo) {
+        if (registro && Date.now() > registro.expiraEm) codigosTemporarios.delete(email);
+        return res.status(400).json({ mensagem: "Código inválido ou expirado" });
+    }
+
+    try {
+        const usuario = await prisma.usuarios.findUnique({ where: { email } });
+        if (!usuario) return res.status(400).json({ mensagem: "Código inválido" });
+
+        if (fluxo === "login") {
+            const tokenLogin = extrairTokenDeCookie(req.headers.cookie || "");
+            const dadosLogin = tokenLogin && jwt.verify(tokenLogin, SECRET_KEY);
+            if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
+                return res.status(401).json({ mensagem: "Sessão de login expirada" });
+            }
+            const tokenDefinitivo = gerarToken(usuario, "authLogin");
+            res.clearCookie("loginVerification", TEMP_COOKIE_OPTIONS);
+            res.cookie("AuthToken", tokenDefinitivo, COOKIE_OPTIONS);
+        } else {
+            const tokenReset = gerarToken(usuario, "temp_resetPassword");
+            res.cookie("temp_resetPassword", tokenReset, TEMP_COOKIE_OPTIONS);
+        }
+
+        codigosTemporarios.delete(email);
+        return res.status(200).json({ mensagem: "Código verificado com sucesso", fluxo });
+    } catch (erro) {
+        return res.status(401).json({ mensagem: "Sessão inválida" });
+    }
+});
+
+app.post("/api/verificar-codigo-resetPassWord",limitadorAuth,async (req, res) => {
     const { email, codigo } = req.body;
+    
+    if(!email || !codigo){
+        return res.status(400).json({Mensagem:"Email e codigo incorreto ou inexistente"})
+    }
+
     const registro = codigosTemporarios.get(email);
 
     if (!registro) {
@@ -442,13 +527,57 @@ app.post("/api/verificar-codigo", limitadorAuth, (req, res) => {
         return res.status(400).json({ mensagem: "Código expirado." });
     }
 
-    if (codigo === registro.codigo) {
-        codigosTemporarios.delete(email);
-        return res.status(200).json({ mensagem: "Código verificado com sucesso!" });
-    } else {
-        return res.status(400).json({ mensagem: "Código incorreto." });
+    if(codigo !== registro.codigo){
+        return res.status(400).json({Mensagem:"Código invalido"})
+    }
+
+    try{
+        const usuario = await prisma.usuarios.findUnique({
+            where:{
+                email:email
+            }
+        })
+
+        if(usuario){
+
+            const token = gerarToken(usuario,"temp_resetPassword");
+
+            codigosTemporarios.delete(email);
+
+            res.cookie('temp_resetPassword', token,TEMP_COOKIE_OPTIONS)
+
+            return res.status(200).json({ mensagem: "Código verificado com sucesso!" });
+
+        }else{
+            return res.status(400).json({Mensagem:"Erro ao enviar código"})
+        }
+    }catch(erro){
+        console.error("Erro em:",erro)
+        return res.status(500).json({Mensagem:"Erro no servidor"})
     }
 });
+
+app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"), async (req, res) => {
+    const senha = req.body.senha;
+
+    if (typeof senha !== "string" || senha.length < 8 || senha.length > 128) {
+        return res.status(400).json({ mensagem: "A senha deve ter entre 8 e 128 caracteres" });
+    }
+
+    try {
+        await prisma.usuarios.update({
+            where: { id: req.usuario.id },
+            data: { senha: await criarHash(senha) }
+        });
+
+        res.clearCookie("temp_resetPassword", TEMP_COOKIE_OPTIONS);
+        return res.status(200).json({ mensagem: "Senha alterada com sucesso" });
+    } catch (erro) {
+        console.error("Erro ao alterar senha:", erro);
+        return res.status(500).json({ mensagem: "Erro interno no servidor" });
+    }
+});
+
 app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
     try{
         const {nome,email,senha} = req.body

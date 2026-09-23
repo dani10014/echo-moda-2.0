@@ -66,7 +66,7 @@
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify({
-                    email:form.email.trim(),
+                    email:form.email.trim().toLowerCase(),
                 })
             })
 
@@ -74,19 +74,22 @@
                 PopupRef.value.exibirPopUp("Usuario com conta existente");
                 return
             }
-            if(respostaVerificaConta.status === 409){
+            if(respostaVerificaConta.status === 400){
                 try{
                     const resultadoEnviarCodigo = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
                         method:"POST",
                         headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({
-                            email:form.email
+                            email:form.email.trim().toLowerCase()
                         })
                     })
                     if(resultadoEnviarCodigo.status === 200){
                         PopupRef.value.exibirPopUp("Codigo enviado");
-                        localStorage.setItem("emailUser",form.email.trim());
-                        mudarTela("irParaVerificacaoDeEmail");
+                        sessionStorage.setItem("emailUser",form.email.trim().toLowerCase())
+                        
+                        setTimeout(()=>{
+                            mudarTela("irParaVerificacaoDeEmail");
+                        })
                     }
                     if(resultadoEnviarCodigo.status === 400){
                         PopupRef.value.exibirPopUp("Erro ao enviar código");

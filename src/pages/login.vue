@@ -14,7 +14,8 @@
             <div class="card">
                 <LoginTelaInicial v-if="loginInicialAtivo" @irParaTelaEsqueciSenha="mudarTelaParaEsqueciSenha" @telaVerificarCodigo="irParaTelaVerificacaoCodigo" @irParaTelaDeCadastro="irParaTelaDeCadastro"/>
                 <TelaEsqueciSenha v-if="telaEsqueciSenhaAtiva" @voltarAoLoginInicial="voltarTelaLoginInicial" @irParaVerificacao="irParaTelaVerificacaoCodigo"/>
-                <TelaVerificarCodigo v-if="verificarCodigoAtivo"/>
+                <TelaVerificarCodigo v-if="verificarCodigoAtivo" :fluxo="fluxoVerificacao" @codigoVerificado="aoVerificarCodigo"/>
+                <TelaNovaSenha v-if="novaSenhaAtiva" @senhaAlterada="voltarTelaLoginInicial"/>
                 <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo" @voltarTelaParaInicio="voltarTelaLoginInicial"/>
             </div>
         </div>
@@ -28,32 +29,53 @@
     import TelaEsqueciSenha from "../components/telaEsqueciSenha.vue";
     import TelaVerificarCodigo from '@/components/telaVerificarCodigo.vue';
     import telaCriarConta from "../components/criarConta.vue";
+    import TelaNovaSenha from "../components/telaNovaSenha.vue";
 
     const router = useRouter();
     const loginInicialAtivo = ref(true);
     const telaEsqueciSenhaAtiva = ref(false);
     const verificarCodigoAtivo = ref(false);
     const telaCriarContaAtivo = ref(false);
+    const novaSenhaAtiva = ref(false);
+    const fluxoVerificacao = ref<"login" | "reset">("login");
+
+    const telaAtivaNesteMomento = ref("loginInicial")
 
     const mudarTelaParaEsqueciSenha = () =>{
         loginInicialAtivo.value = false;
         telaEsqueciSenhaAtiva.value = true;
+        telaAtivaNesteMomento.value = "esqueciSenha"
+        fluxoVerificacao.value = "reset";
     }
     const voltarTelaLoginInicial = () =>{
         loginInicialAtivo.value = true;
         verificarCodigoAtivo.value = false;
         telaCriarContaAtivo.value = false;
         telaEsqueciSenhaAtiva.value = false;
+        telaAtivaNesteMomento.value = "loginInicial"
     }
     const irParaTelaVerificacaoCodigo = () =>{
         loginInicialAtivo.value = false;
         telaCriarContaAtivo.value = false;
         telaEsqueciSenhaAtiva.value = false;
         verificarCodigoAtivo.value = true;
+        novaSenhaAtiva.value = false;
     }
     const irParaTelaDeCadastro = () => {
         loginInicialAtivo.value = false;
         telaCriarContaAtivo.value = true;
+        telaAtivaNesteMomento.value = "cadastro"
+    }
+
+    /**Verifica de qual tela a verificação de codigo esta vindo */
+
+    const aoVerificarCodigo = async () => {
+        verificarCodigoAtivo.value = false;
+        if(fluxoVerificacao.value === "reset") {
+            novaSenhaAtiva.value = true;
+            return;
+        }
+        router.push("/");
     }
     const irParaHome = () =>{
         router.push("/");

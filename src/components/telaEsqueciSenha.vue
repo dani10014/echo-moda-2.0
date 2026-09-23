@@ -41,13 +41,15 @@
                     const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
                         method:"POST",
                         headers:{"Content-Type":"application/json"},
+                        credentials:"include",
                         body:JSON.stringify({
-                            email:form.email,
+                            email:form.email.trim().toLowerCase(),
                         })
                     })
 
                     if(resposta.status === 200){
                         PopupRef.value?.exibirPopUp("Código enviado com sucesso")
+                        sessionStorage.setItem("emailUser", form.email.trim().toLowerCase());
                         mudartela("irParaVerificacao");
                         
                     }
