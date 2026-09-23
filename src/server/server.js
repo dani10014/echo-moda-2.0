@@ -23,8 +23,8 @@ const PORT = process.env.PORT || 3000;
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    secure:"true",
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/'
 };
