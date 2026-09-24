@@ -20,6 +20,7 @@ const allowedOrigins = [
 ];
 const resend = new Resend(process.env.RESEND_API_KEY);
 const PORT = process.env.PORT || 3000;
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 const COOKIE_OPTIONS = {
@@ -413,7 +414,7 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
 
         const resultado = await prisma.usuarios.findUnique({
             where:{
-                email:email.trim(),
+                email:email.trim().toLowerCase(),
             }
         });
         
@@ -516,6 +517,7 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
     }
 
     const registro = codigosTemporarios.get(email);
+
     if (!registro || Date.now() > registro.expiraEm || registro.codigo !== codigo) {
         if (registro && Date.now() > registro.expiraEm) codigosTemporarios.delete(email);
         return responderErro(res, 400, "Código inválido ou expirado.");
