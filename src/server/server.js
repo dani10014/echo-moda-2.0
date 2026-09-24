@@ -20,11 +20,12 @@ const allowedOrigins = [
 ];
 const resend = new Resend(process.env.RESEND_API_KEY);
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    sameSite: 'none',
-    secure:true,
+    sameSite: isProduction ? 'none' : 'lax',
+    secure:isProduction,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/'
 };

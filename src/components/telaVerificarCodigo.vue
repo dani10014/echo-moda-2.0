@@ -16,11 +16,16 @@
     </div>
     <span>Verifique sua caixa de span ou lixeira</span>
     <popup ref="PopupRef"/>
+    <div v-if="loadingAtivo" class="container-loading">
+        <loading/>
+    </div>
 </template>
 <script setup lang="ts">
 import { reactive,ref } from 'vue';
 import popup from './popup.vue';
 import { useRouter } from 'vue-router';
+import loading from "../components/loading.vue";
+
     const props = defineProps<{ fluxo: "login" | "reset" }>();
     const emailuser = sessionStorage.getItem("emailUser");
 
@@ -32,6 +37,7 @@ import { useRouter } from 'vue-router';
         codigo5:"",
         codigo6:"",
     })
+    const loadingAtivo = ref(false);
 
     const codigoFoiVerificado = defineEmits(["codigoVerificado"])
 
@@ -57,6 +63,7 @@ import { useRouter } from 'vue-router';
     })
     const verificarCodigo = async () =>{
         if(codigoInvalido.value === false){
+            loadingAtivo.value = true;
             try{
                 const envioCodigo = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-codigo",{
                     method:"POST",
@@ -79,6 +86,8 @@ import { useRouter } from 'vue-router';
                 }
         }catch(erro){
             PopupRef.value?.exibirPopUp("Erro intérno do servidor");
+        }finally{
+            loadingAtivo.value = false;
         }
         }
     }
@@ -106,6 +115,17 @@ import { useRouter } from 'vue-router';
         &::before{
             content: "* ";
         }
+    }
+    .container-loading{
+        display: flex;
+        left: 0;
+        top: 0;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.504);
+        width: 100%;
+        height: 100%;
+        position: absolute;
     }
     .linha-inputs-codigo{
         display: flex;
