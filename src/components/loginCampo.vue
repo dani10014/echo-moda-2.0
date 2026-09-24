@@ -100,10 +100,25 @@
                             const respostaServidor = await respostaLogin.json();
                             
                         if(respostaLogin.status === 200){
-                            PopupRef.value?.exibirPopUp("Seguindo para verificação");
-                            setTimeout(()=>{
-                                mudarTela("telaVerificarCodigo");
-                            },500)
+                            try{
+                                const envioCodigo = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
+                                    method:"POST",
+                                    headers:{"Content-Type":"application/json"},
+                                    body:JSON.stringify({
+                                        email:form.email.trim().toLowerCase(),
+                                    })
+                                })
+                                if(envioCodigo.status === 200){
+                                    PopupRef.value?.exibirPopUp("Seguindo para verificação");
+                                    setTimeout(()=>{
+                                        mudarTela("telaVerificarCodigo");
+                                    },500)
+                                }
+                                
+                            }catch(erro){
+                                PopupRef.value?.exibirPopUp("Erro ao enviar o código");
+                                return
+                            }
                         }
                         if(respostaLogin.status === 400 && respostaServidor.precisaCadastrarSenha){
                             PopupRef.value?.exibirPopUp("Email ou senha inválida");

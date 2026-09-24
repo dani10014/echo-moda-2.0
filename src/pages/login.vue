@@ -121,7 +121,7 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: 450px;
+            height: auto;
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;

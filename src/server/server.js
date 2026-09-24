@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3000;
 const COOKIE_OPTIONS = {
     httpOnly: true,
     sameSite: 'none',
-    secure:"true",
+    secure:true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/'
 };
@@ -33,6 +33,22 @@ const TEMP_COOKIE_OPTIONS = {
     ...COOKIE_OPTIONS,
     maxAge: 15 * 60 * 1000,
 };
+
+const MENSAGENS_ERRO = {
+    dadosInvalidos: "Dados inválidos.",
+    tokenAusente: "Token não fornecido.",
+    tokenInvalido: "Token inválido ou expirado.",
+    acessoNegado: "Acesso negado.",
+    erroInterno: "Erro interno no servidor.",
+};
+
+function responderErro(res, status, erro, detalhes = {}) {
+    return res.status(status).json({
+        sucesso: false,
+        erro,
+        ...detalhes,
+    });
+}
 
 const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 
@@ -134,17 +150,29 @@ function gerarToken(usuario,tipo){
     }
 }
 
-function extrairTokenDeCookie(cookieHeader) {
+function extrairTokenDeCookie(cookieHeader, nomesPermitidos) {
     if (!cookieHeader) return null;
-    return cookieHeader.split(';').reduce((token, cookie) => {
 
-        const [nome, valor] = cookie.trim().split('=');
-        if (['token', 'AuthToken', 'authToken', 'loginVerification', 'temp_resetPassword'].includes(nome)) {
-            return decodeURIComponent(valor || '');
+    const nomes = nomesPermitidos || ['authLogin', 'AuthToken', 'authToken'];
+
+    for (const cookie of cookieHeader.split(';')) {
+        const separador = cookie.indexOf('=');
+        if (separador === -1) continue;
+
+        const nome = cookie.slice(0, separador).trim();
+        if (!nomes.includes(nome)) continue;
+
+        const valor = cookie.slice(separador + 1).trim();
+        if (!valor) continue;
+
+        try {
+            return decodeURIComponent(valor);
+        } catch {
+            return null;
         }
-        return token;
-        
-    }, null);
+    }
+
+    return null;
 }
 
 function verificarToken(tipoToken = 'authLogin'){
@@ -153,20 +181,25 @@ function verificarToken(tipoToken = 'authLogin'){
     let token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        token = extrairTokenDeCookie(req.headers.cookie || '');
+        const cookiesPorTipo = {
+            authLogin: ['authLogin', 'AuthToken', 'authToken'],
+            temp_login: ['loginVerification'],
+            temp_resetPassword: ['temp_resetPassword'],
+        };
+        token = extrairTokenDeCookie(req.headers.cookie || '', cookiesPorTipo[tipoToken]);
     }
 
     if (!token) {
-        return res.status(401).json({ erro: 'Token não fornecido ou acesso negado.' });
+        return responderErro(res, 401, MENSAGENS_ERRO.tokenAusente);
     }
 
     jwt.verify(token, SECRET_KEY, (err, usuarioDecodificado) => {
         if (err) {
-            return res.status(403).json({ erro: 'Token inválido ou expirado.' });
+            return responderErro(res, 403, MENSAGENS_ERRO.tokenInvalido);
         }
         
         if(usuarioDecodificado.tipo !== tipoToken){
-            return res.status(403).json({ erro: 'Acesso negado: tipo de token incompatível com esta rota.' });
+            return responderErro(res, 403, MENSAGENS_ERRO.acessoNegado);
         }
 
         req.usuario = usuarioDecodificado; 
@@ -194,7 +227,7 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
         const {token} = req.body;
         
         if (!token) {
-            return res.status(400).json({ error: 'Token é obrigatório.' });
+            return responderErro(res, 400, "Token é obrigatório.");
         }
 
         const ticket = await client.verifyIdToken({
@@ -219,14 +252,14 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
             }
         });
 
-        const tokenUsuario = gerarToken(criarUser);
+        const tokenUsuario = gerarToken(criarUser,"authLogin");
 
-        res.cookie("AuthToken", tokenUsuario, COOKIE_OPTIONS);
+        res.cookie("authLogin", tokenUsuario, COOKIE_OPTIONS);
         
         return res.status(200).json({Mensagem:"Usuario criado com sucesso"})
 
     }catch (error) {
-        return res.status(401).json({ error: error.message });
+        return responderErro(res, 401, "Token do Google inválido.");
     }
 });
 app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
@@ -234,8 +267,7 @@ app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
         const {itens} = req.body;
 
         if(!itens){
-            res.status(400).json({mensagem:"Dados invalidos"});
-            return
+            return responderErro(res, 400, MENSAGENS_ERRO.dadosInvalidos);
         }
 
         const id = itens.map((item => Number(item.id)));
@@ -252,7 +284,7 @@ app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
             const produtoBanco = resultado.find(produto => Number(produto.id) === Number(item.id));
 
             if(!produtoBanco){
-                return res.status(400).json({Mensagem:"Produto inexistente no banco de dados"})
+                return responderErro(res, 400, "Produto inexistente no banco de dados.");
             }
 
             valorTotal += produtoBanco.preco * item.quantidade;
@@ -265,7 +297,7 @@ app.post("/api/calcular-produtos",limitadorGeral, async (req,res) =>{
             return res.status(500).json({ sucesso: false, erro: "Erro ao buscar produtos para pagamento" });
         }
     });
-app.post("/api/criar-pagamento",limitadorGeral,verificarToken, async (req, res) => {
+app.post("/api/criar-pagamento",limitadorGeral,verificarToken(), async (req, res) => {
     try {
         const { email, nome, cpf, precoTotal} = req.body;
         const idUser = req.usuario.id;
@@ -273,7 +305,7 @@ app.post("/api/criar-pagamento",limitadorGeral,verificarToken, async (req, res) 
         const erros = validarDadosUsuario({ email, nome, cpf, precoTotal });
 
         if (erros.length > 0) {
-            return res.status(400).json({ sucesso: false, erros });
+            return responderErro(res, 400, "Dados do pagamento inválidos.", { erros });
         }
 
         const cpfSanitizado = sanitizarCPF(cpf);
@@ -358,7 +390,7 @@ app.post("/api/verificar-cadastro" ,limitadorAuth, async (req,res) => {
             return res.status(200).json({mensagem:"usuario existe no banco"})
             
         }else{
-            return res.status(400).json({mensagem:"Usuario não existe no banco"})
+            return responderErro(res, 400, "Usuário não encontrado.");
         }
 
     }catch(erro){
@@ -371,11 +403,11 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
         const {email,senha} = req.body
 
         if(!email || !senha){
-            return res.status(400).json({mensagem:"Dados invalidos"})
+            return responderErro(res, 400, MENSAGENS_ERRO.dadosInvalidos);
         }
 
         if(senha.trim().length < 8){
-            return res.status(400).json({erro:"Tamanho de senha incorreta"});
+            return responderErro(res, 400, "A senha deve ter no mínimo 8 caracteres.");
         }
 
         const resultado = await prisma.usuarios.findUnique({
@@ -385,21 +417,19 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
         });
         
         if(!resultado){
-            return res.status(400).json({Mensagem:"Email ou senha inválidos"}   )
+            return responderErro(res, 400, "E-mail ou senha inválidos.");
         }
 
         if (!resultado.senha) {
-            return res.status(400).json({ 
-                sucesso: false, 
-                precisaCadastrarSenha: true, 
-                erro: "Esta conta foi criada via Google. Deseja definir uma senha por e-mail?" 
+            return responderErro(res, 400, "Esta conta foi criada via Google. Defina uma senha por e-mail.", {
+                precisaCadastrarSenha: true,
             });
         }
 
         const senhaValida = resultado ? await compararSenha(senha, resultado.senha) : false;
         
         if (!senhaValida) {
-            return res.status(400).json({ sucesso: false, erro: "E-mail ou senha inválidos" });
+            return responderErro(res, 400, "E-mail ou senha inválidos.");
         }
 
         if(resultado && senhaValida){
@@ -409,13 +439,13 @@ app.post("/api/logar",limitadorAuth,async (req,res) => {
                 res.cookie("loginVerification", tokenTemporario, TEMP_COOKIE_OPTIONS);
                 return res.status(200).json({ sucesso: true, usuario: usuarioSemSenha});
             } catch (tokenError) {
-                return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
+                return responderErro(res, 500, "Não foi possível iniciar a verificação.");
             }
         }
 
     }catch(erro){
         console.error("Erro no login:", erro);
-        return res.status(500).json({ sucesso: false, erro: "Erro interno no servidor" });
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 })
     /** Essa rota gera o token definitivo caso o user verique o email e possua o token temp */
@@ -429,10 +459,11 @@ app.post("/api/authlogin",limitadorAuth,verificarToken('temp_login'),async (req,
         const token = gerarToken(usuario,"authLogin")
 
         res.clearCookie("loginVerification", TEMP_COOKIE_OPTIONS);
-        return res.cookie("AuthToken",token,COOKIE_OPTIONS).status(200).json({ sucesso: true });
+        return res.cookie("authLogin",token,COOKIE_OPTIONS).status(200).json({ sucesso: true });
 
     }catch(erro){
-
+        console.error("Erro ao gerar token de autenticação:", erro);
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 })
 
@@ -453,11 +484,16 @@ async function enviarEmailVerificacao(destinatario, codigo) {
 app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
     try {
         const { email } = req.body;
-        if (!email) return res.status(400).json({ erro: "E-mail necessário" });
+        if (typeof email !== "string" || !email.trim()) {
+            return responderErro(res, 400, "E-mail é obrigatório.");
+        }
 
         const emailNormalizado = email.trim().toLowerCase();
+
         const codigo = gerarCodigoVerificacao();
+
         const expiraEm = Date.now() + (5 * 60 * 1000);
+
         codigosTemporarios.set(emailNormalizado, { codigo, expiraEm });
         
         await enviarEmailVerificacao(emailNormalizado, codigo);
@@ -465,7 +501,7 @@ app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
         return res.status(200).json({ mensagem: "Código enviado!" });
     } catch (erro) {
         console.error("ERRO DETALHADO NO SMTP:", erro);
-        return res.status(500).json({ erro: "Falha ao enviar e-mail: "});
+        return responderErro(res, 500, "Não foi possível enviar o código.");
     }
 });
 
@@ -475,28 +511,28 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
     const fluxo = req.body.fluxo;
 
     if(!email || !/^\d{6}$/.test(codigo) || !["login", "reset"].includes(fluxo)){
-        return res.status(400).json({ mensagem: "Código inválido" });
+        return responderErro(res, 400, "Código inválido.");
     }
 
     const registro = codigosTemporarios.get(email);
     if (!registro || Date.now() > registro.expiraEm || registro.codigo !== codigo) {
         if (registro && Date.now() > registro.expiraEm) codigosTemporarios.delete(email);
-        return res.status(400).json({ mensagem: "Código inválido ou expirado" });
+        return responderErro(res, 400, "Código inválido ou expirado.");
     }
 
     try {
         const usuario = await prisma.usuarios.findUnique({ where: { email } });
-        if (!usuario) return res.status(400).json({ mensagem: "Código inválido" });
+        if (!usuario) return responderErro(res, 400, "Código inválido.");
 
         if (fluxo === "login") {
-            const tokenLogin = extrairTokenDeCookie(req.headers.cookie || "");
+            const tokenLogin = extrairTokenDeCookie(req.headers.cookie || "", ["loginVerification"]);
             const dadosLogin = tokenLogin && jwt.verify(tokenLogin, SECRET_KEY);
             if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
-                return res.status(401).json({ mensagem: "Sessão de login expirada" });
+                return responderErro(res, 401, "A sessão de login expirou.");
             }
             const tokenDefinitivo = gerarToken(usuario, "authLogin");
             res.clearCookie("loginVerification", TEMP_COOKIE_OPTIONS);
-            res.cookie("AuthToken", tokenDefinitivo, COOKIE_OPTIONS);
+            res.cookie("authLogin", tokenDefinitivo, COOKIE_OPTIONS);
         } else {
             const tokenReset = gerarToken(usuario, "temp_resetPassword");
             res.cookie("temp_resetPassword", tokenReset, TEMP_COOKIE_OPTIONS);
@@ -505,7 +541,7 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
         codigosTemporarios.delete(email);
         return res.status(200).json({ mensagem: "Código verificado com sucesso", fluxo });
     } catch (erro) {
-        return res.status(401).json({ mensagem: "Sessão inválida" });
+        return responderErro(res, 401, "A sessão de verificação é inválida ou expirou.");
     }
 });
 
@@ -513,22 +549,22 @@ app.post("/api/verificar-codigo-resetPassWord",limitadorAuth,async (req, res) =>
     const { email, codigo } = req.body;
     
     if(!email || !codigo){
-        return res.status(400).json({Mensagem:"Email e codigo incorreto ou inexistente"})
+        return responderErro(res, 400, "E-mail e código são obrigatórios.");
     }
 
     const registro = codigosTemporarios.get(email);
 
     if (!registro) {
-        return res.status(400).json({ mensagem: "Solicite um código primeiro." });
+        return responderErro(res, 400, "Solicite um novo código.");
     }
 
     if (Date.now() > registro.expiraEm) {
         codigosTemporarios.delete(email);
-        return res.status(400).json({ mensagem: "Código expirado." });
+        return responderErro(res, 400, "O código expirou.");
     }
 
     if(codigo !== registro.codigo){
-        return res.status(400).json({Mensagem:"Código invalido"})
+        return responderErro(res, 400, "Código inválido.");
     }
 
     try{
@@ -549,11 +585,11 @@ app.post("/api/verificar-codigo-resetPassWord",limitadorAuth,async (req, res) =>
             return res.status(200).json({ mensagem: "Código verificado com sucesso!" });
 
         }else{
-            return res.status(400).json({Mensagem:"Erro ao enviar código"})
+            return responderErro(res, 400, "Não foi possível validar o código.");
         }
     }catch(erro){
         console.error("Erro em:",erro)
-        return res.status(500).json({Mensagem:"Erro no servidor"})
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 });
 
@@ -561,7 +597,7 @@ app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"),
     const senha = req.body.senha;
 
     if (typeof senha !== "string" || senha.length < 8 || senha.length > 128) {
-        return res.status(400).json({ mensagem: "A senha deve ter entre 8 e 128 caracteres" });
+        return responderErro(res, 400, "A senha deve ter entre 8 e 128 caracteres.");
     }
 
     try {
@@ -574,7 +610,7 @@ app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"),
         return res.status(200).json({ mensagem: "Senha alterada com sucesso" });
     } catch (erro) {
         console.error("Erro ao alterar senha:", erro);
-        return res.status(500).json({ mensagem: "Erro interno no servidor" });
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 });
 
@@ -583,19 +619,19 @@ app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
         const {nome,email,senha} = req.body
 
         if (!nome || typeof nome !== 'string' || nome.trim().length < 3 || nome.trim().length > 32 ){
-            return res.status(400).json({ erro: "O nome deve ter pelo menos 3 caracteres e ser válido." });
+            return responderErro(res, 400, "O nome deve ter entre 3 e 32 caracteres.");
         }
         
         if (/\d/.test(nome)) {
-            return res.status(400).json({ erro: "O nome não pode conter números." });
+            return responderErro(res, 400, "O nome não pode conter números.");
         }
         
         if(nome.trim().length > 32){
-            return res.status(400).json({erro:"Nome muito extenso"});
+            return responderErro(res, 400, "O nome deve ter no máximo 32 caracteres.");
         }
 
         if(senha.length < 8 ){
-            return res.status(400).json({erro:"Tamanho de senha incorreta"})
+            return responderErro(res, 400, "A senha deve ter no mínimo 8 caracteres.");
         }
             const novoUsuario = await prisma.usuarios.create({
             data:{
@@ -606,17 +642,17 @@ app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
         })
             const {senha: _senha,...usuarioSemSenha} = novoUsuario
             try {
-                const token = gerarToken(usuarioSemSenha);
-                res.cookie('AuthToken', token, COOKIE_OPTIONS);
+                const token = gerarToken(usuarioSemSenha,"authLogin");
+                res.cookie('authLogin', token, COOKIE_OPTIONS);
                 return res.status(201).json({ sucesso: true, mensagem: "Sucesso,usuario criado com sucesso",});
             } catch (tokenError) {
                 console.error('Erro ao gerar token no cadastro:', tokenError);
-                return res.status(500).json({ sucesso: false, erro: 'Erro ao gerar token de autenticação' });
+                return responderErro(res, 500, "Não foi possível criar a sessão.");
             }
 
     }catch(erro){
         console.error(erro)
-        return res.status(500).json({ erro: "Erro no servidor" });
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 })
 app.get("/api/buscar-produtos",limitadorGeral, async (req, res) => {
@@ -627,20 +663,20 @@ app.get("/api/buscar-produtos",limitadorGeral, async (req, res) => {
     }
     catch(erro){
         console.error("ERRO EXATO NO FINDMANY:", erro);
-        return res.status(500).json({ erro: "Erro ao buscar produtos"});
+        return responderErro(res, 500, "Não foi possível buscar os produtos.");
     }
 })
-app.post("/api/salvar-favoritos",limitadorGeral,verificarToken,async (req, res) => {
+app.post("/api/salvar-favoritos",limitadorGeral,verificarToken(),async (req, res) => {
     try {
         const { idproduto } = req.body;
         const idclient = req.usuario.id;
 
         if (!idclient || idproduto == null) {
-            return res.status(400).json({ resultado: "Dados de favorito inválidos" });
+            return responderErro(res, 400, "Dados de favorito inválidos.");
         }
 
         if (!prisma.favoritos) {
-            return res.status(500).json({ resultado: "Erro interno do servidor"});
+            return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
         }
 
         const resultado = await prisma.favoritos.create({
@@ -654,21 +690,21 @@ app.post("/api/salvar-favoritos",limitadorGeral,verificarToken,async (req, res) 
 
     } catch (erro) {
         console.error("Erro ao salvar favorito:", erro);
-        return res.status(500).json({ resultado: "Erro ao conectar no servidor"});
+        return responderErro(res, 500, "Não foi possível salvar o favorito.");
     }
 });
-app.delete("/api/remover-favoritos",limitadorGeral,verificarToken, async (req,res) =>{
+app.delete("/api/remover-favoritos",limitadorGeral,verificarToken(), async (req,res) =>{
     try{
         const {idproduto} = req.body
         const idclient = req.usuario.id;
         
         if(!idclient || !idproduto){
-            return res.status(400).json({mensagem:"Erro no servidor"})
+            return responderErro(res, 400, "Dados do favorito inválidos.");
         }
         const resultado = await prisma.favoritos.delete({
             where:{
                 id_client_id_produto:{
-                    id_client:idclient,
+                    id_client:String(idclient),
                     id_produto:BigInt(idproduto),
                 }
             }
@@ -677,15 +713,15 @@ app.delete("/api/remover-favoritos",limitadorGeral,verificarToken, async (req,re
         
     }catch(erro){
         console.error(erro)
-        return res.status(500).json({mensagem:"Erro ao conversar com o servidor"})
+        return responderErro(res, 500, "Não foi possível remover o favorito.");
     }
 })
-app.get("/api/buscar-favoritos",limitadorGeral,verificarToken, async (req,res) =>{
+app.get("/api/buscar-favoritos",limitadorGeral,verificarToken(), async (req,res) =>{
     try{
         const idclient = req.usuario.id;
         
         if(!idclient){
-            return res.status(400).json({mensagem:"Sem id do cliente"})
+            return responderErro(res, 400, "Usuário não identificado.");
         }
         const resultado = await prisma.favoritos.findMany({
             where:{
@@ -697,10 +733,10 @@ app.get("/api/buscar-favoritos",limitadorGeral,verificarToken, async (req,res) =
 
     }catch(erro){
         console.error("Erro no servidor",erro)
-        return res.status(500).json({mensagem:"Erro no servidor"})
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 })
-app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,res) =>{
+app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken(), async (req,res) =>{
     try{
         const{nomeNovo,novoEmail,novoNumero} = req.body
         const idUser = req.usuario.id;
@@ -743,7 +779,7 @@ app.put("/api/alterar-dados-usuario",limitadorGeral ,verificarToken, async (req,
         return res.status(500).json("Erro no servidor")
     }
 })
-app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken, async (req,res) =>{
+app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken(), async (req,res) =>{
     try{
         let{cep,numero,rua,bairro,cidade,estado,complemento} = req.body;
         const idUser = req.usuario.id;
@@ -791,7 +827,7 @@ app.post("/api/alterar-endereco" ,limitadorAuth ,verificarToken, async (req,res)
         return res.status(500).json({ sucesso: false, erro: "Erro ao atualizar endereço" });
     }
 })
-app.get("/api/buscar-endereco", limitadorGeral, verificarToken, async (req, res) => {
+app.get("/api/buscar-endereco", limitadorGeral, verificarToken(), async (req, res) => {
     try{
         const idUser = req.usuario.id;
 
@@ -812,7 +848,7 @@ app.get("/api/buscar-endereco", limitadorGeral, verificarToken, async (req, res)
         return res.status(500).json({sucesso:false,erro:"Erro no servidor"})
     }
 })
-app.get("/api/buscar-historico" ,limitadorGeral ,verificarToken, async (req,res) =>{
+app.get("/api/buscar-historico" ,limitadorGeral ,verificarToken(), async (req,res) =>{
     try{
         const iduser = req.usuario.id
 
@@ -831,7 +867,7 @@ app.get("/api/buscar-historico" ,limitadorGeral ,verificarToken, async (req,res)
         return res.status(500).json({ erro: "Erro interno no servidor ao buscar histórico" });
     }
 })
-app.get("/api/validar-sessao", verificarToken, (req, res) => {
+app.get("/api/validar-sessao", verificarToken(), (req, res) => {
     return res.status(200).json({ sucesso: true, usuario: req.usuario });
 });
 app.get("/api/health", (req, res) => {
