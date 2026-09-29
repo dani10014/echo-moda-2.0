@@ -496,9 +496,10 @@ app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
 
         const expiraEm = Date.now() + (5 * 60 * 1000);
 
-        codigosTemporarios.set(emailNormalizado, { codigo, expiraEm });
+        codigosTemporarios.set(emailNormalizado, { codigo, expiraEm ,tentativas: 0});
         
         await enviarEmailVerificacao(emailNormalizado, codigo);
+
         
         return res.status(200).json({ mensagem: "Código enviado!" });
     } catch (erro) {
@@ -517,10 +518,21 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
     }
 
     const registro = codigosTemporarios.get(email);
-
-    if (!registro || Date.now() > registro.expiraEm || registro.codigo !== codigo) {
+    
+    if (!registro || Date.now() > registro.expiraEm ) {
         if (registro && Date.now() > registro.expiraEm) codigosTemporarios.delete(email);
+
         return responderErro(res, 400, "Código inválido ou expirado.");
+    }
+    
+    if(registro.tentativas >= 3 ){
+        codigosTemporarios.delete(email);
+        return responderErro(res, 400, "Muitas tentativas,abortando.");
+    }
+
+    if(registro.codigo !== codigo){
+        registro.tentativas += 1
+        return res.status(400).json({Mensagem:"Código inválido ou expirado."})
     }
 
     try {
@@ -534,7 +546,7 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
             if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
                 return responderErro(res, 401, "A sessão de login expirou.");
             }
-            
+
             return res.status(200).json({Mensagem:"Código verificado com sucesso"})
 
         } else {
