@@ -19,6 +19,10 @@
                 <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo" @voltarTelaParaInicio="voltarTelaLoginInicial"/>
             </div>
         </div>
+        <div v-if="loadingAtivo" class="container-loading">
+            <loading/>
+        </div>
+        <popup ref="PopupRef" />
     </main>
 </template>
 <script setup lang="ts">
@@ -30,6 +34,8 @@
     import TelaVerificarCodigo from '@/components/telaVerificarCodigo.vue';
     import telaCriarConta from "../components/criarConta.vue";
     import TelaNovaSenha from "../components/telaNovaSenha.vue";
+    import loading from "../components/loading.vue";
+    import popup from "../components/popup.vue";
 
     const router = useRouter();
     const loginInicialAtivo = ref(true);
@@ -38,6 +44,8 @@
     const telaCriarContaAtivo = ref(false);
     const novaSenhaAtiva = ref(false);
     const fluxoVerificacao = ref<"login" | "reset">("login");
+    const loadingAtivo = ref(false);
+    const PopupRef = ref<any>(null);
 
     const telaAtivaNesteMomento = ref("loginInicial")
 
@@ -71,11 +79,37 @@
 
     const aoVerificarCodigo = async () => {
         verificarCodigoAtivo.value = false;
+        loadingAtivo.value = true
+
         if(fluxoVerificacao.value === "reset") {
             novaSenhaAtiva.value = true;
             return;
         }
-        router.push("/");
+        if(fluxoVerificacao.value === "login"){
+            
+            try{
+                const logar = await fetch("https://echo-moda-2-0.onrender.com/api/authlogin",{
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    credentials:"include",
+                })
+
+                if(logar.status === 200){
+                    PopupRef.value.exibirPopUp("Logado com sucesso")
+                    setTimeout(()=>{
+                        router.push("/")
+                    },500)
+                }
+                if(logar.status === 400){
+                    PopupRef.value.exibirPopUp("Erro ao logar")
+                    return
+                }
+            }catch(erro){
+                PopupRef.value.exibirPopUp("Erro interno do servidor")
+            }finally{
+                loadingAtivo.value = false;
+            }
+        }
     }
     const irParaHome = () =>{
         router.push("/");
@@ -121,7 +155,7 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: auto;
+            height: 400px;
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;
@@ -134,5 +168,16 @@
             }
         }
     }
+}
+.container-loading{
+    display: flex;
+    left: 0;
+    top: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.504);
+    width: 100%;
+    height: 100%;
+    position: absolute;
 }
 </style>

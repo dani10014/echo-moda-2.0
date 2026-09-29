@@ -80,7 +80,7 @@
                     const resposta = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-cadastro",{
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
-                        credentials:"include",
+                    credentials:"include",
                     body:JSON.stringify({
                         email:form.email.trim().toLowerCase(),
                     })
@@ -92,6 +92,7 @@
                         const respostaLogin = await fetch("https://echo-moda-2-0.onrender.com/api/logar",{
                             method:"POST",
                             headers:{"Content-Type":"application/json"},
+                            credentials:"include",
                             body:JSON.stringify({
                                 email:form.email.trim().toLowerCase(),
                                 senha:form.senha.trim(),

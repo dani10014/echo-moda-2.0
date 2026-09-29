@@ -530,12 +530,13 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
         if (fluxo === "login") {
             const tokenLogin = extrairTokenDeCookie(req.headers.cookie || "", ["loginVerification"]);
             const dadosLogin = tokenLogin && jwt.verify(tokenLogin, SECRET_KEY);
+
             if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
                 return responderErro(res, 401, "A sessão de login expirou.");
             }
-            const tokenDefinitivo = gerarToken(usuario, "authLogin");
-            res.clearCookie("loginVerification", TEMP_COOKIE_OPTIONS);
-            res.cookie("authLogin", tokenDefinitivo, COOKIE_OPTIONS);
+            
+            return res.status(200).json({Mensagem:"Código verificado com sucesso"})
+
         } else {
             const tokenReset = gerarToken(usuario, "temp_resetPassword");
             res.cookie("temp_resetPassword", tokenReset, TEMP_COOKIE_OPTIONS);
