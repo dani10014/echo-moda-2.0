@@ -2,6 +2,7 @@
     <main class="home">
         <header>
             <cabecalho
+                v-if="!usuarioLogado"
                 textoBtn="Entrar"
                 @abrirMenu = "ativarMenuDrop"
                 @acao="irParaLogin"
@@ -54,6 +55,7 @@
                 <button><i class="fa-solid fa-headset"></i> Fale conosco</button>
             </div>
         </Transition>
+        <popup ref="PopupRef" />
     </main>
 </template>
 
@@ -61,10 +63,35 @@
 import CardProduto from '../components/card-produto.vue'
 import Loading from "../components/loading.vue";
 import Cabecalho from '../components/cabecalho.vue';
+import Popup from "../components/popup.vue";
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { onUnmounted } from 'vue'
 
+const PopupRef = ref<any>(null);
+const usuarioLogado = ref(false);
+
+onUnmounted (async() => {
+    try{
+        const userLog = await fetch("https://echo-moda-2-0.onrender.com/api/validar-sessao",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            credentials:"include",
+        })
+
+        if(userLog.status === 200){
+            PopupRef.value.exibirPopUp("Bem Vindo")
+            usuarioLogado.value = true;
+        }
+        else{
+            router.push("/login")
+            usuarioLogado.value = false;
+        }
+    }catch(erro){
+        PopupRef.value.exibirPopUp("Erro ao verificar login");
+    }
+})
 const router = useRouter()
 const menuDropEstaAtivo = ref(false);
 

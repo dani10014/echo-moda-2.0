@@ -20,6 +20,7 @@
         <loading/>
     </div>
 </template>
+
 <script setup lang="ts">
 import { reactive,ref } from 'vue';
 import popup from './popup.vue';
@@ -82,7 +83,6 @@ import loading from "../components/loading.vue";
                 if(envioCodigo.status === 400){
                     PopupRef.value?.exibirPopUp("Código inválido");
                     codigoCompleto.value = ""
-                    return
                 }
         }catch(erro){
             PopupRef.value?.exibirPopUp("Erro intérno do servidor");

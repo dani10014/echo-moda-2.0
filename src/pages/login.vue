@@ -83,7 +83,7 @@
 
         if(fluxoVerificacao.value === "reset") {
             novaSenhaAtiva.value = true;
-            return;
+            loadingAtivo.value = false;
         }
         if(fluxoVerificacao.value === "login"){
             
@@ -96,6 +96,7 @@
 
                 if(logar.status === 200){
                     PopupRef.value.exibirPopUp("Logado com sucesso")
+
                     setTimeout(()=>{
                         router.push("/")
                     },500)
@@ -155,7 +156,7 @@
             overflow-y: hidden;
             overflow-x: hidden;
             position: relative;
-            height: 400px;
+            height: 450px;
             @include variaveis.modalSurface;
             @include variaveis.corModais;
             color: #fff;

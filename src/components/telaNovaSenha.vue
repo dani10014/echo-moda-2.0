@@ -7,17 +7,23 @@
         <button class="btn-acessar" @click="salvarSenha">Salvar senha</button>
     </div>
     <popup ref="popupRef" />
+    <div v-if="loadingAtivo" class="container-loading">
+        <loading/>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
 import popup from "./popup.vue";
+import loading from "../components/loading.vue";
+
 
 const emit = defineEmits(["senhaAlterada"]);
 const senha = ref("");
 const confirmacao = ref("");
 const erro = ref(false);
 const popupRef = ref<any>(null);
+const loadingAtivo = ref(false);
 
 const salvarSenha = async () => {
     erro.value = senha.value.length < 8 || senha.value !== confirmacao.value;
@@ -42,8 +48,36 @@ const salvarSenha = async () => {
 
 <style lang="scss" scoped>
 @use "../components-scss/variaveis.scss";
-h2 { text-align: center; @include variaveis.fontePadraoSite; }
-input { padding: variaveis.$space-md; border: none; border-radius: 5px; outline: none; margin-bottom: variaveis.$space-sm; }
-span { color: red; font-size: variaveis.$font-size-xs; }
-.botao-acessar { display: flex; justify-content: center; margin-top: variaveis.$space-xl; button { width: 50%; @include variaveis.padraoBotao; } }
+    h2 { 
+        text-align: center;
+        @include variaveis.fontePadraoSite;
+    }
+    input { 
+        padding: variaveis.$space-md;
+        border: none;
+        border-radius: 5px;
+        outline: none;
+        margin-bottom: variaveis.$space-sm;
+    }
+    span { 
+        color: red;
+        font-size: variaveis.$font-size-xs; }
+    .botao-acessar {
+        display: flex; justify-content: center;
+        margin-top: variaveis.$space-xl;
+        button { 
+            width: 50%; @include variaveis.padraoBotao;
+        } 
+    }
+    .container-loading{
+        display: flex;
+        left: 0;
+        top: 0;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.504);
+        width: 100%;
+        height: 100%;
+        position: absolute;
+    }
 </style>
