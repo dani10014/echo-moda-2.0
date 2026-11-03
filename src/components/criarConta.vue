@@ -38,7 +38,7 @@
     const resultNomeErro = ref(false);
     const PopupRef = ref<any>(null);
     const loadingAtivo = ref(false);
-    const mudarTela = defineEmits(['irParaVerificacaoDeEmail','voltarTelaParaInicio'])
+    const mudarTela = defineEmits(['irParaVerificacaoDeEmail','voltarTelaParaInicio',"cadastroverificado"])
     
     const router = useRouter();
 

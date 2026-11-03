@@ -27,7 +27,7 @@ import popup from './popup.vue';
 import { useRouter } from 'vue-router';
 import loading from "../components/loading.vue";
 
-    const props = defineProps<{ fluxo: "login" | "reset" }>();
+    const props = defineProps<{ fluxo: "login" | "reset" | "cadastro"}>();
     const emailuser = sessionStorage.getItem("emailUser");
 
     const espacoCodigo = reactive({

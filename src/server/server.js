@@ -147,7 +147,11 @@ function gerarToken(usuario,tipo){
     }
     if(tipo === "authLogin"){
         return jwt.sign(payload, SECRET_KEY, { expiresIn: '7d' });
-    }else{
+    }
+    if(tipo === "temp_cadastro"){
+        return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' });
+    }
+    else{
         throw new Error("Erro ao gerar token");
     }
 }
@@ -187,6 +191,7 @@ function verificarToken(tipoToken = 'authLogin'){
             authLogin: ['authLogin', 'AuthToken', 'authToken'],
             temp_login: ['loginVerification'],
             temp_resetPassword: ['temp_resetPassword'],
+            temp_cadastro: ['temp_cadastro']
         };
         token = extrairTokenDeCookie(req.headers.cookie || '', cookiesPorTipo[tipoToken]);
     }
@@ -549,7 +554,17 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
 
             return res.status(200).json({Mensagem:"Código verificado com sucesso"})
 
-        } else {
+        }else if(fluxo === "cadastro"){
+            const dadosToken = extrairTokenDeCookie(req.headers.cookie || "", ["temp_login"]);
+            const dadosLogin = dadosToken && jwt.verify(dadosToken, SECRET_KEY);
+
+            if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
+                return responderErro(res, 401, "A sessão de login expirou.");
+            }
+
+            return res.status(200).json({Mensagem:"Código verificado com sucesso, prossiga para criar a conta."})
+
+        }else if (fluxo === "reset") {
             const tokenReset = gerarToken(usuario, "temp_resetPassword");
             res.cookie("temp_resetPassword", tokenReset, TEMP_COOKIE_OPTIONS);
         }
@@ -630,7 +645,7 @@ app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"),
     }
 });
 
-app.post("/api/criar-cadastro",limitadorAuth,async (req,res) =>{
+app.post("/api/criar-cadastro",limitadorAuth,verificarToken("temp_login"),async (req,res) =>{
     try{
         const {nome,email,senha} = req.body
 

@@ -1,10 +1,10 @@
 <template>
     <h2>Login</h2>
 
-    <input type="text" v-model="form.email" placeholder="Email" @keyup="validarEmail">
+    <input type="text" v-model="form.email" placeholder="Email" @keyup="validarEmail" id="email">
     <span v-if="resultEmailErro && form.email.length > 0" class="aviso-campo-invalido">Email incorreto</span>
 
-    <input v-model="form.senha" type="password" @keyup="validarSenha" placeholder="Senha">
+    <input v-model="form.senha" type="password" @keyup="validarSenha" placeholder="Senha" id="senha">
     <span v-if="resultSenhaErro && form.senha.length > 0" class="aviso-campo-invalido">Senha com minimo de 8 caracteres</span>
     <div class="botoes-esquecer-criar-conta">
         <a href="#" @click="irParaTelaEsqueciSenha" class="btn-esqueci-senha">Esqueci a senha</a>
@@ -15,7 +15,7 @@
     </div>
     <p class="texto-divisor-ou">Ou</p>
     <div class="login-google">
-        <googleButton 
+        <googleBborder-radius: 10px;utton 
             @sucesso = "loginGoogleSucesso"
             @erro = "loginGoogleErro"
         />

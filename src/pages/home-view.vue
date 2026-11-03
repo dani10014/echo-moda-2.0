@@ -287,7 +287,6 @@ const irParaLogin = () => {
             height: 100%;
             border: none;
             transition: all 0.3s ease-in-out;
-            border-radius: 10px;
             @include variaveis.fontePadraoSite;
             color: black;
             cursor: pointer;

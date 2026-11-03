@@ -43,7 +43,7 @@
     const verificarCodigoAtivo = ref(false);
     const telaCriarContaAtivo = ref(false);
     const novaSenhaAtiva = ref(false);
-    const fluxoVerificacao = ref<"login" | "reset">("login");
+    const fluxoVerificacao = ref<"login" | "reset" | "cadastro">("login");
     const loadingAtivo = ref(false);
     const PopupRef = ref<any>(null);
 
@@ -61,6 +61,7 @@
         telaCriarContaAtivo.value = false;
         telaEsqueciSenhaAtiva.value = false;
         telaAtivaNesteMomento.value = "loginInicial"
+        fluxoVerificacao.value = "login";
     }
     const irParaTelaVerificacaoCodigo = () =>{
         loginInicialAtivo.value = false;
@@ -72,7 +73,8 @@
     const irParaTelaDeCadastro = () => {
         loginInicialAtivo.value = false;
         telaCriarContaAtivo.value = true;
-        telaAtivaNesteMomento.value = "cadastro"
+        telaAtivaNesteMomento.value = "cadastro";
+        fluxoVerificacao.value = "cadastro";
     }
 
     /**Verifica de qual tela a verificação de codigo esta vindo */
@@ -109,6 +111,17 @@
                 PopupRef.value.exibirPopUp("Erro interno do servidor")
             }finally{
                 loadingAtivo.value = false;
+            }
+        }
+        if(fluxoVerificacao.value ===  "cadastro"){
+            try{
+                const resultadoCadastro = await fetch("",{
+                    method:"POST",
+                    headers:{"Content-type":"application/json"},
+                    credentials:"include",
+                })
+            }catch(erro){
+                PopupRef.value.exibirPopUp("Erro interno do servidor")
             }
         }
     }
