@@ -645,7 +645,7 @@ app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"),
     }
 });
 
-app.post("/api/criar-cadastro",limitadorAuth,verificarToken("temp_login"),async (req,res) =>{
+app.post("/api/criar-cadastro",limitadorAuth,verificarToken("temp_cadastro"),async (req,res) =>{
     try{
         const {nome,email,senha} = req.body
 
