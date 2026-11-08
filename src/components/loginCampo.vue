@@ -15,7 +15,8 @@
     </div>
     <p class="texto-divisor-ou">Ou</p>
     <div class="login-google">
-        <googleBborder-radius: 10px;utton 
+        <googleButton
+            googleBborder-radius: 10px;utton 
             @sucesso = "loginGoogleSucesso"
             @erro = "loginGoogleErro"
         />
