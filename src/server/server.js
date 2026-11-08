@@ -518,7 +518,7 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
     const codigo = String(req.body.codigo || "");
     const fluxo = req.body.fluxo;
 
-    if(!email || !/^\d{6}$/.test(codigo) || !["login", "reset"].includes(fluxo)){
+    if(!email || !/^\d{6}$/.test(codigo) || !["login", "reset","cadastro"].includes(fluxo)){
         return responderErro(res, 400, "Código inválido.");
     }
 
@@ -552,16 +552,21 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
                 return responderErro(res, 401, "A sessão de login expirou.");
             }
 
+            
+
             return res.status(200).json({Mensagem:"Código verificado com sucesso"})
 
         }else if(fluxo === "cadastro"){
-            const dadosToken = extrairTokenDeCookie(req.headers.cookie || "", ["temp_login"]);
+            const dadosToken = extrairTokenDeCookie(req.headers.cookie || "", ["temp_cadastro"]);
             const dadosLogin = dadosToken && jwt.verify(dadosToken, SECRET_KEY);
 
-            if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
+            if (!dadosLogin || dadosLogin.tipo !== "temp_cadastro" || dadosLogin.email !== email) {
                 return responderErro(res, 401, "A sessão de login expirou.");
             }
-
+            
+            const token = gerarToken(usuario, "temp_cadastro");
+            res.cookie("temp_cadastro", token, TEMP_COOKIE_OPTIONS);
+            
             return res.status(200).json({Mensagem:"Código verificado com sucesso, prossiga para criar a conta."})
 
         }else if (fluxo === "reset") {

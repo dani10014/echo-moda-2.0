@@ -115,11 +115,24 @@
         }
         if(fluxoVerificacao.value ===  "cadastro"){
             try{
-                const resultadoCadastro = await fetch("",{
+                const resultadoCadastro = await fetch("https://echo-moda-2-0.onrender.com/api/criar-cadastro",{
                     method:"POST",
                     headers:{"Content-type":"application/json"},
                     credentials:"include",
                 })
+
+                if(resultadoCadastro.status === 200){
+                    PopupRef.value.exibirPopUp("Cadastro realizado com sucesso")
+
+                    setTimeout(()=>{
+                        router.push("/")
+                    },500)
+                }
+                
+                if(resultadoCadastro.status === 400){
+                    PopupRef.value.exibirPopUp("Erro ao criar cadastro")
+                    return
+                }
             }catch(erro){
                 PopupRef.value.exibirPopUp("Erro interno do servidor")
             }
