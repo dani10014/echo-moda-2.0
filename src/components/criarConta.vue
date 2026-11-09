@@ -3,12 +3,12 @@
     <h1>Cadastro</h1>
     
     <input type="text" v-model="form.nome" placeholder="Nome" @keyup="validarNome">
-    <span v-if="resultNomeErro && form.nome.length > 0" class="aviso-campo-invalido">Nome com minimo de 3 caracteres</span>
+    <span v-if="resultNomeErro && form.nome.length > 0" class="aviso-campo-invalido">Nome deve ter de 3 a 32 caracteres e não conter números</span>
 
     <input type="text" v-model="form.email" placeholder="Email" @keyup="validarEmail">
     <span v-if="resultEmailErro && form.email.length > 0" class="aviso-campo-invalido">Email incorreto</span>
 
-    <input v-model="form.senha" type="text" @keyup="validarSenha" placeholder="Senha">
+    <input v-model="form.senha" type="password" @keyup="validarSenha" placeholder="Senha">
     <span v-if="resultSenhaErro && form.senha.length > 0" class="aviso-campo-invalido">Senha com minimo de 8 caracteres</span>
 
     <div class="botao-acessar">
@@ -24,7 +24,6 @@
 <script setup lang="ts">
     import {reactive,ref} from "vue"
     import Popup from "./popup.vue"
-    import {useRouter} from "vue-router";
     import loading from "./loading.vue";
 
     const form = reactive({
@@ -36,12 +35,10 @@
     const resultEmailErro = ref(false);
     const resultSenhaErro = ref(false);
     const resultNomeErro = ref(false);
-    const PopupRef = ref<any>(null);
+    const PopupRef = ref<InstanceType<typeof Popup> | null>(null);
     const loadingAtivo = ref(false);
     const mudarTela = defineEmits(['irParaVerificacaoDeEmail','voltarTelaParaInicio',"cadastroverificado"])
     
-    const router = useRouter();
-
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const validarEmail = () => {
@@ -51,27 +48,29 @@
         resultSenhaErro.value = form.senha.trim().length < 8; 
     }
     const validarNome = () =>{
-        if(form.nome.length > 3){
-            resultNomeErro.value = false;
-        }else{
-            resultNomeErro.value = true
-        }
+        const nome = form.nome.trim();
+        resultNomeErro.value = nome.length < 3 || nome.length > 32 || /\d/.test(nome);
     }
 
     const criarConta = async () =>{
+        validarNome();
+        validarEmail();
+        validarSenha();
+
         if(resultEmailErro.value === false && resultNomeErro.value === false && resultSenhaErro.value === false){
             loadingAtivo.value = true;
         try{
             const respostaVerificaConta = await fetch("https://echo-moda-2-0.onrender.com/api/verificar-cadastro",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
+                credentials:"include",
                 body:JSON.stringify({
                     email:form.email.trim().toLowerCase(),
                 })
             })
 
             if(respostaVerificaConta.status === 200){
-                PopupRef.value.exibirPopUp("Usuario com conta existente");
+                PopupRef.value?.exibirPopUp("Usuario com conta existente");
                 return
             }
             if(respostaVerificaConta.status === 400){
@@ -79,32 +78,42 @@
                     const resultadoEnviarCodigo = await fetch("https://echo-moda-2-0.onrender.com/api/enviar-codigo",{
                         method:"POST",
                         headers:{"Content-Type":"application/json"},
+                        credentials:"include",
                         body:JSON.stringify({
                             email:form.email.trim().toLowerCase()
                         })
                     })
                     if(resultadoEnviarCodigo.status === 200){
-                        PopupRef.value.exibirPopUp("Codigo enviado");
+                        PopupRef.value?.exibirPopUp("Codigo enviado");
                         sessionStorage.setItem("emailUser",form.email.trim().toLowerCase())
                         
                         setTimeout(()=>{
-                            mudarTela("irParaVerificacaoDeEmail");
+                            mudarTela("irParaVerificacaoDeEmail", {
+                                nome: form.nome.trim(),
+                                email: form.email.trim().toLowerCase(),
+                                senha: form.senha.trim(),
+                            });
                         })
-                    }
-                    if(resultadoEnviarCodigo.status === 400){
-                        PopupRef.value.exibirPopUp("Erro ao enviar código");
+                    }else{
+                        const erro = await resultadoEnviarCodigo.json().catch(() => null);
+                        PopupRef.value?.exibirPopUp(erro?.erro || "Erro ao enviar código");
                     }
                 }catch(erro){
-                    PopupRef.value.exibirPopUp("Erro no servidor");
+                    console.error("Erro ao enviar código:", erro);
+                    PopupRef.value?.exibirPopUp("Erro no servidor");
                 }
+            }else if(respostaVerificaConta.status !== 400){
+                const erro = await respostaVerificaConta.json().catch(() => null);
+                PopupRef.value?.exibirPopUp(erro?.erro || "Erro ao verificar cadastro");
             }
         }catch(erro){
-            PopupRef.value.exibirPopUp("Erro no servidor");
+            console.error("Erro ao iniciar cadastro:", erro);
+            PopupRef.value?.exibirPopUp("Erro no servidor");
         }finally{
             loadingAtivo.value = false;
         }
     }else{
-        PopupRef.value.exibirPopUp("Dados Incorretos");
+        PopupRef.value?.exibirPopUp("Dados Incorretos");
     }
 }
 </script>

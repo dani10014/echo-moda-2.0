@@ -24,7 +24,6 @@
 <script setup lang="ts">
 import { reactive,ref } from 'vue';
 import popup from './popup.vue';
-import { useRouter } from 'vue-router';
 import loading from "../components/loading.vue";
 
     const props = defineProps<{ fluxo: "login" | "reset" | "cadastro"}>();
@@ -46,8 +45,7 @@ import loading from "../components/loading.vue";
 
     const codigoInvalido = ref(false)
     
-    const PopupRef = ref<any>(null);
-    const router = useRouter();
+    const PopupRef = ref<InstanceType<typeof popup> | null>(null);
 
     const validarCodigoDigitado = (()=>{
         codigoCompleto.value = "";
@@ -76,15 +74,16 @@ import loading from "../components/loading.vue";
                         fluxo: props.fluxo,
                     })
                 })
-                if(envioCodigo.status === 200){
+                const respostaServidor = await envioCodigo.json().catch(() => null);
+                if(envioCodigo.ok){
                     PopupRef.value?.exibirPopUp("Código verificado");
                     codigoFoiVerificado("codigoVerificado");
-                }
-                if(envioCodigo.status === 400){
-                    PopupRef.value?.exibirPopUp("Código inválido");
+                }else{
+                    PopupRef.value?.exibirPopUp(respostaServidor?.erro || respostaServidor?.Mensagem || "Não foi possível verificar o código");
                     codigoCompleto.value = ""
                 }
         }catch(erro){
+            console.error("Erro ao verificar código:", erro);
             PopupRef.value?.exibirPopUp("Erro intérno do servidor");
         }finally{
             loadingAtivo.value = false;

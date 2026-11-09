@@ -16,7 +16,11 @@
                 <TelaEsqueciSenha v-if="telaEsqueciSenhaAtiva" @voltarAoLoginInicial="voltarTelaLoginInicial" @irParaVerificacao="irParaTelaVerificacaoCodigo"/>
                 <TelaVerificarCodigo v-if="verificarCodigoAtivo" :fluxo="fluxoVerificacao" @codigoVerificado="aoVerificarCodigo"/>
                 <TelaNovaSenha v-if="novaSenhaAtiva" @senhaAlterada="voltarTelaLoginInicial"/>
-                <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="irParaTelaVerificacaoCodigo" @voltarTelaParaInicio="voltarTelaLoginInicial"/>
+                <telaCriarConta v-if="telaCriarContaAtivo" @irParaVerificacaoDeEmail="iniciarVerificacaoCadastro" @voltarTelaParaInicio="voltarTelaLoginInicial"/>
+                <div v-if="cadastroVerificado && dadosCadastroPendente" class="erro-cadastro">
+                    <p>{{ erroCadastro }}</p>
+                    <button class="btn-acessar" :disabled="loadingAtivo" @click="finalizarCadastro">Tentar criar conta novamente</button>
+                </div>
             </div>
         </div>
         <div v-if="loadingAtivo" class="container-loading">
@@ -26,7 +30,7 @@
     </main>
 </template>
 <script setup lang="ts">
-    import { reactive,ref } from 'vue';
+    import { ref } from 'vue';
     import cabecalho from '../components/cabecalho.vue';
     import { useRouter } from 'vue-router';
     import LoginTelaInicial from "../components/loginCampo.vue";
@@ -45,7 +49,10 @@
     const novaSenhaAtiva = ref(false);
     const fluxoVerificacao = ref<"login" | "reset" | "cadastro">("login");
     const loadingAtivo = ref(false);
-    const PopupRef = ref<any>(null);
+    const PopupRef = ref<InstanceType<typeof popup> | null>(null);
+    const dadosCadastroPendente = ref<{ nome: string; email: string; senha: string } | null>(null);
+    const cadastroVerificado = ref(false);
+    const erroCadastro = ref("");
 
     const telaAtivaNesteMomento = ref("loginInicial")
 
@@ -76,18 +83,26 @@
         telaAtivaNesteMomento.value = "cadastro";
         fluxoVerificacao.value = "cadastro";
     }
+    const iniciarVerificacaoCadastro = (dados: { nome: string; email: string; senha: string }) => {
+        dadosCadastroPendente.value = dados;
+        cadastroVerificado.value = false;
+        erroCadastro.value = "";
+        fluxoVerificacao.value = "cadastro";
+        irParaTelaVerificacaoCodigo();
+    }
 
     /**Verifica de qual tela a verificação de codigo esta vindo */
 
     const aoVerificarCodigo = async () => {
-        verificarCodigoAtivo.value = false;
         loadingAtivo.value = true
 
         if(fluxoVerificacao.value === "reset") {
+            verificarCodigoAtivo.value = false;
             novaSenhaAtiva.value = true;
             loadingAtivo.value = false;
         }
         if(fluxoVerificacao.value === "login"){
+            verificarCodigoAtivo.value = false;
             
             try{
                 const logar = await fetch("https://echo-moda-2-0.onrender.com/api/authlogin",{
@@ -97,45 +112,68 @@
                 })
 
                 if(logar.status === 200){
-                    PopupRef.value.exibirPopUp("Logado com sucesso")
+                    PopupRef.value?.exibirPopUp("Logado com sucesso")
 
                     setTimeout(()=>{
                         router.push("/")
                     },500)
                 }
                 if(logar.status === 400){
-                    PopupRef.value.exibirPopUp("Erro ao logar")
+                    PopupRef.value?.exibirPopUp("Erro ao logar")
                     return
                 }
             }catch(erro){
-                PopupRef.value.exibirPopUp("Erro interno do servidor")
+                console.error("Erro ao finalizar login:", erro);
+                PopupRef.value?.exibirPopUp("Erro interno do servidor")
             }finally{
                 loadingAtivo.value = false;
             }
         }
         if(fluxoVerificacao.value ===  "cadastro"){
-            try{
-                const resultadoCadastro = await fetch("https://echo-moda-2-0.onrender.com/api/criar-cadastro",{
-                    method:"POST",
-                    headers:{"Content-type":"application/json"},
-                    credentials:"include",
-                })
+            verificarCodigoAtivo.value = false;
+            cadastroVerificado.value = true;
+            await finalizarCadastro();
+        }
+    }
 
-                if(resultadoCadastro.status === 200){
-                    PopupRef.value.exibirPopUp("Cadastro realizado com sucesso")
-
-                    setTimeout(()=>{
-                        router.push("/")
-                    },500)
-                }
-                
-                if(resultadoCadastro.status === 400){
-                    PopupRef.value.exibirPopUp("Erro ao criar cadastro")
-                    return
-                }
-            }catch(erro){
-                PopupRef.value.exibirPopUp("Erro interno do servidor")
+    const finalizarCadastro = async () => {
+        loadingAtivo.value = true;
+        erroCadastro.value = "";
+        try{
+            if (!dadosCadastroPendente.value) {
+                erroCadastro.value = "Dados do cadastro não encontrados. Tente novamente.";
+                cadastroVerificado.value = false;
+                telaCriarContaAtivo.value = true;
+                return;
             }
+
+            const resultadoCadastro = await fetch("https://echo-moda-2-0.onrender.com/api/criar-cadastro",{
+                method:"POST",
+                headers:{"Content-type":"application/json"},
+                credentials:"include",
+                body: JSON.stringify(dadosCadastroPendente.value),
+            })
+
+            const respostaServidor = await resultadoCadastro.json().catch(() => null);
+
+            if(resultadoCadastro.status === 201){
+                cadastroVerificado.value = false;
+                dadosCadastroPendente.value = null;
+                PopupRef.value?.exibirPopUp("Cadastro realizado com sucesso")
+
+                setTimeout(()=>{
+                    router.push("/")
+                },500)
+            }else{
+                erroCadastro.value = respostaServidor?.erro || "Erro ao criar cadastro";
+                PopupRef.value?.exibirPopUp(erroCadastro.value);
+            }
+        }catch(erro){
+            console.error("Erro ao criar cadastro:", erro);
+            erroCadastro.value = "Erro interno do servidor. Tente novamente.";
+            PopupRef.value?.exibirPopUp(erroCadastro.value);
+        }finally{
+            loadingAtivo.value = false;
         }
     }
     const irParaHome = () =>{
@@ -206,5 +244,12 @@
     width: 100%;
     height: 100%;
     position: absolute;
+}
+.erro-cadastro{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: variaveis.$space-md;
+    text-align: center;
 }
 </style>

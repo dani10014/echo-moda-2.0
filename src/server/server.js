@@ -208,7 +208,7 @@ function verificarToken(tipoToken = 'authLogin'){
         if(usuarioDecodificado.tipo !== tipoToken){
             return responderErro(res, 403, MENSAGENS_ERRO.acessoNegado);
         }
-
+        
         req.usuario = usuarioDecodificado; 
         next();
     });
@@ -505,7 +505,6 @@ app.post("/api/enviar-codigo", limitadorAuth, async (req, res) => {
         
         await enviarEmailVerificacao(emailNormalizado, codigo);
 
-        
         return res.status(200).json({ mensagem: "Código enviado!" });
     } catch (erro) {
         console.error("ERRO DETALHADO NO SMTP:", erro);
@@ -542,42 +541,51 @@ app.post("/api/verificar-codigo",limitadorAuth,async (req, res) => {
 
     try {
         const usuario = await prisma.usuarios.findUnique({ where: { email } });
-        if (!usuario) return responderErro(res, 400, "Código inválido.");
 
         if (fluxo === "login") {
+            if (!usuario) {
+                return responderErro(res, 400, "Usuário não encontrado.");
+            }
+
             const tokenLogin = extrairTokenDeCookie(req.headers.cookie || "", ["loginVerification"]);
-            const dadosLogin = tokenLogin && jwt.verify(tokenLogin, SECRET_KEY);
+            let dadosLogin;
+            try {
+                dadosLogin = tokenLogin && jwt.verify(tokenLogin, SECRET_KEY);
+            } catch {
+                return responderErro(res, 401, "A sessão de login expirou.");
+            }
 
             if (!dadosLogin || dadosLogin.tipo !== "temp_login" || dadosLogin.email !== email) {
                 return responderErro(res, 401, "A sessão de login expirou.");
             }
 
-            
-
-            return res.status(200).json({Mensagem:"Código verificado com sucesso"})
+            codigosTemporarios.delete(email);
+            return res.status(200).json({Mensagem:"Código verificado com sucesso"});
 
         }else if(fluxo === "cadastro"){
-            const dadosToken = extrairTokenDeCookie(req.headers.cookie || "", ["temp_cadastro"]);
-            const dadosLogin = dadosToken && jwt.verify(dadosToken, SECRET_KEY);
-
-            if (!dadosLogin || dadosLogin.tipo !== "temp_cadastro" || dadosLogin.email !== email) {
-                return responderErro(res, 401, "A sessão de login expirou.");
+            if (usuario) {
+                return responderErro(res, 409, "Este e-mail já possui cadastro.");
             }
-            
-            const token = gerarToken(usuario, "temp_cadastro");
+
+            const token = gerarToken({id:null,email}, "temp_cadastro");
             res.cookie("temp_cadastro", token, TEMP_COOKIE_OPTIONS);
             
+            codigosTemporarios.delete(email);
             return res.status(200).json({Mensagem:"Código verificado com sucesso, prossiga para criar a conta."})
 
         }else if (fluxo === "reset") {
+            if (!usuario) {
+                return responderErro(res, 400, "Usuário não encontrado.");
+            }
+
             const tokenReset = gerarToken(usuario, "temp_resetPassword");
             res.cookie("temp_resetPassword", tokenReset, TEMP_COOKIE_OPTIONS);
+            codigosTemporarios.delete(email);
+            return res.status(200).json({ mensagem: "Código verificado com sucesso", fluxo });
         }
-
-        codigosTemporarios.delete(email);
-        return res.status(200).json({ mensagem: "Código verificado com sucesso", fluxo });
     } catch (erro) {
-        return responderErro(res, 401, "A sessão de verificação é inválida ou expirou.");
+        console.error("Erro ao verificar código:", erro);
+        return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 });
 
@@ -654,40 +662,57 @@ app.post("/api/criar-cadastro",limitadorAuth,verificarToken("temp_cadastro"),asy
     try{
         const {nome,email,senha} = req.body
 
-        if (!nome || typeof nome !== 'string' || nome.trim().length < 3 || nome.trim().length > 32 ){
+        if (typeof nome !== 'string' || nome.trim().length < 3 || nome.trim().length > 32 ){
             return responderErro(res, 400, "O nome deve ter entre 3 e 32 caracteres.");
         }
         
-        if (/\d/.test(nome)) {
+        if (/\d/.test(nome.trim())) {
             return responderErro(res, 400, "O nome não pode conter números.");
         }
         
-        if(nome.trim().length > 32){
-            return responderErro(res, 400, "O nome deve ter no máximo 32 caracteres.");
+        if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return responderErro(res, 400, "E-mail inválido.");
         }
 
-        if(senha.length < 8 ){
-            return responderErro(res, 400, "A senha deve ter no mínimo 8 caracteres.");
+        const emailNormalizado = email.trim().toLowerCase();
+        if (req.usuario.email !== emailNormalizado) {
+            return responderErro(res, 403, "O e-mail não corresponde à verificação.");
         }
-            const novoUsuario = await prisma.usuarios.create({
+
+        if (typeof senha !== "string" || senha.trim().length < 8 || senha.length > 128) {
+            return responderErro(res, 400, "A senha deve ter entre 8 e 128 caracteres.");
+        }
+
+        const usuarioExistente = await prisma.usuarios.findUnique({
+            where: { email: emailNormalizado }
+        });
+        if (usuarioExistente) {
+            return responderErro(res, 409, "Este e-mail já possui cadastro.");
+        }
+
+        const novoUsuario = await prisma.usuarios.create({
             data:{
-                nome:nome,
-                email:email,
-                senha: await criarHash(senha)
+                nome:nome.trim(),
+                email:emailNormalizado,
+                senha: await criarHash(senha.trim())
             }
         })
-            const {senha: _senha,...usuarioSemSenha} = novoUsuario
-            try {
-                const token = gerarToken(usuarioSemSenha,"authLogin");
-                res.cookie('authLogin', token, COOKIE_OPTIONS);
-                return res.status(201).json({ sucesso: true, mensagem: "Sucesso,usuario criado com sucesso",});
-            } catch (tokenError) {
-                console.error('Erro ao gerar token no cadastro:', tokenError);
-                return responderErro(res, 500, "Não foi possível criar a sessão.");
-            }
+        const {senha: _senha,...usuarioSemSenha} = novoUsuario
+        try {
+            const token = gerarToken(usuarioSemSenha,"authLogin");
+            res.clearCookie("temp_cadastro", TEMP_COOKIE_OPTIONS);
+            res.cookie('authLogin', token, COOKIE_OPTIONS);
+            return res.status(201).json({ sucesso: true, mensagem: "Sucesso, usuario criado com sucesso",});
+        } catch (tokenError) {
+            console.error('Erro ao gerar token no cadastro:', tokenError);
+            return responderErro(res, 500, "Não foi possível criar a sessão.");
+        }
 
     }catch(erro){
-        console.error(erro)
+        if (erro.code === "P2002") {
+            return responderErro(res, 409, "Este e-mail já possui cadastro.");
+        }
+        console.error("Erro ao criar cadastro:", erro)
         return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
     }
 })
