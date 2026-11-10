@@ -113,7 +113,7 @@
 
                 if(logar.status === 200){
                     PopupRef.value?.exibirPopUp("Logado com sucesso")
-
+                    localStorage.setItem("UserLg","Y");
                     setTimeout(()=>{
                         router.push("/")
                     },500)
@@ -160,7 +160,7 @@
                 cadastroVerificado.value = false;
                 dadosCadastroPendente.value = null;
                 PopupRef.value?.exibirPopUp("Cadastro realizado com sucesso")
-
+                localStorage.setItem("UserLg","Y");
                 setTimeout(()=>{
                     router.push("/")
                 },500)

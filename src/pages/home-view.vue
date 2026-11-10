@@ -87,11 +87,20 @@ onUnmounted (async() => {
         else{
             router.push("/login")
             usuarioLogado.value = false;
+            localStorage.removeItem("UserLg");
         }
     }catch(erro){
         PopupRef.value.exibirPopUp("Erro ao verificar login");
     }
 })
+    const verificarLogAtivo = () =>{
+        const confirm = localStorage.getItem("UserLg");
+        if(confirm === "Y"){
+            usuarioLogado.value = true;
+        }else{
+            usuarioLogado.value = false;
+        }
+    }
 const router = useRouter()
 const menuDropEstaAtivo = ref(false);
 

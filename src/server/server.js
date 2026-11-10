@@ -265,7 +265,7 @@ app.post('/api/verificar-google',limitadorAuth, async (req, res) => {
         
         return res.status(200).json({Mensagem:"Usuario criado com sucesso"})
 
-    }catch (error) {
+    }catch (erro) {
         return responderErro(res, 401, "Token do Google inválido.");
     }
 });
@@ -652,6 +652,7 @@ app.post("/api/nova-senha", limitadorAuth, verificarToken("temp_resetPassword"),
 
         res.clearCookie("temp_resetPassword", TEMP_COOKIE_OPTIONS);
         return res.status(200).json({ mensagem: "Senha alterada com sucesso" });
+
     } catch (erro) {
         console.error("Erro ao alterar senha:", erro);
         return responderErro(res, 500, MENSAGENS_ERRO.erroInterno);
@@ -928,7 +929,7 @@ app.get("/api/buscar-historico" ,limitadorGeral ,verificarToken(), async (req,re
         return res.status(500).json({ erro: "Erro interno no servidor ao buscar histórico" });
     }
 })
-app.get("/api/validar-sessao", verificarToken(), (req, res) => {
+app.get("/api/validar-sessao", verificarToken("authLogin"), (req, res) => {
     return res.status(200).json({ sucesso: true, usuario: req.usuario });
 });
 app.get("/api/health", (req, res) => {
