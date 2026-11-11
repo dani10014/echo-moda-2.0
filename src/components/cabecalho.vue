@@ -10,7 +10,7 @@
                 <span>
                 </span>
             </button>
-            <button class="botao-logar" @click="$emit('acao')">
+            <button class="botao-logar" @click="$emit('acao')" v-if="!usuarioLogado">
                 {{ textoBtn }}
             </button>
         </div>
@@ -21,6 +21,7 @@
     defineProps<{
         textoBtn:string;
         menuDropAtivo:boolean;
+        usuarioLogado:boolean;
     }>()
     
     defineEmits(['acao','abrirMenu'])

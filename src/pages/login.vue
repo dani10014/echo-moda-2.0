@@ -5,6 +5,7 @@
                 textoBtn="Voltar"
                 @acao="irParaHome"
                 :menuDropAtivo="false"
+                :usuarioLogado="false"
             />
         </header>
         <div class="bg-login">

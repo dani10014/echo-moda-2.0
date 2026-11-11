@@ -2,10 +2,10 @@
     <main class="home">
         <header>
             <cabecalho
-                v-if="!usuarioLogado"
                 textoBtn="Entrar"
                 @abrirMenu = "ativarMenuDrop"
                 @acao="irParaLogin"
+                :usuarioLogado = usuarioLogado
                 :menuDropAtivo="true"
             />
         </header>
@@ -55,7 +55,10 @@
                 <button><i class="fa-solid fa-headset"></i> Fale conosco</button>
             </div>
         </Transition>
-        <popup ref="PopupRef" />
+        <Popup ref="PopupRef" />
+        <div v-if="loadingAtivo" class="container-loading">
+            <Loading/>
+        </div>
     </main>
 </template>
 
@@ -67,40 +70,44 @@ import Popup from "../components/popup.vue";
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { onUnmounted } from 'vue'
+import { onMounted } from 'vue'
 
-const PopupRef = ref<any>(null);
+const PopupRef = ref<InstanceType<typeof Popup> | null>(null);
 const usuarioLogado = ref(false);
+const loadingAtivo = ref(false);
 
-onUnmounted (async() => {
+onMounted (async() => {
+    loadingAtivo.value = true;
+    
     try{
         const userLog = await fetch("https://echo-moda-2-0.onrender.com/api/validar-sessao",{
-            method:"POST",
+            method:"GET",
             headers:{"Content-Type":"application/json"},
             credentials:"include",
         })
 
         if(userLog.status === 200){
-            PopupRef.value.exibirPopUp("Bem Vindo")
             usuarioLogado.value = true;
+            const boasVindasJarodou = localStorage.getItem("boasVindas");
+
+            if(!boasVindasJarodou){
+                PopupRef.value?.exibirPopUp("Bem Vindo")
+                localStorage.setItem("boasVindas","Sim");
+            }else{
+                return;
+            }
         }
         else{
-            router.push("/login")
             usuarioLogado.value = false;
-            localStorage.removeItem("UserLg");
+            localStorage.removeItem("boasVindas");
         }
     }catch(erro){
-        PopupRef.value.exibirPopUp("Erro ao verificar login");
+        PopupRef.value?.exibirPopUp("Erro ao verificar login");
+    }finally{
+        loadingAtivo.value = false;
     }
 })
-    const verificarLogAtivo = () =>{
-        const confirm = localStorage.getItem("UserLg");
-        if(confirm === "Y"){
-            usuarioLogado.value = true;
-        }else{
-            usuarioLogado.value = false;
-        }
-    }
+
 const router = useRouter()
 const menuDropEstaAtivo = ref(false);
 
@@ -218,7 +225,18 @@ const irParaLogin = () => {
             }
         }
     }
-    
+    .container-loading{
+        display: flex;
+        left: 0;
+        top: 0;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.504);
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        z-index: 100;
+    }
     .catalogo-section{
             min-height: 100vh;
             background: #f6f7dc;
