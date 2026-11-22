@@ -235,7 +235,7 @@ const irParaLogin = () => {
         width: 100%;
         height: 100%;
         position: fixed;
-        z-index: 100;
+        z-index: 2000;
     }
     .catalogo-section{
             min-height: 100vh;

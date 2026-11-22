@@ -2,12 +2,12 @@
     <h2>Codigo enviado para:</h2>
     <p>{{ emailuser }} </p>
     <div class="linha-inputs-codigo">
-        <input v-model="espacoCodigo.codigo1" type="text">
-        <input v-model="espacoCodigo.codigo2" type="text">
-        <input v-model="espacoCodigo.codigo3" type="text">
-        <input v-model="espacoCodigo.codigo4" type="text">
-        <input v-model="espacoCodigo.codigo5" type="text">
-        <input v-model="espacoCodigo.codigo6" type="text">
+        <input v-model="espacoCodigo.codigo1" @input="verificarEhNumero(espacoCodigo.codigo1,'codigo1')" type="text" maxlength="1">
+        <input v-model="espacoCodigo.codigo2" @input="verificarEhNumero(espacoCodigo.codigo2,'codigo2')" type="text" maxlength="1">
+        <input v-model="espacoCodigo.codigo3" @input="verificarEhNumero(espacoCodigo.codigo3,'codigo3')" type="text" maxlength="1">
+        <input v-model="espacoCodigo.codigo4" @input="verificarEhNumero(espacoCodigo.codigo4,'codigo4')" type="text" maxlength="1">
+        <input v-model="espacoCodigo.codigo5" @input="verificarEhNumero(espacoCodigo.codigo5,'codigo5')" type="text" maxlength="1">
+        <input v-model="espacoCodigo.codigo6" @input="verificarEhNumero(espacoCodigo.codigo6,'codigo6')" type="text" maxlength="1">
     </div>
     <span v-if="codigoInvalido" class="codigo-invalido">Código inválido</span>
 
@@ -47,6 +47,14 @@ import loading from "../components/loading.vue";
     
     const PopupRef = ref<InstanceType<typeof popup> | null>(null);
 
+    type ChaveCodigo = keyof typeof espacoCodigo;
+
+    const verificarEhNumero = (digito:any,posicaoCampo:ChaveCodigo) =>{
+        if(!/^\d$/.test(digito) || digito.length > 1){
+            espacoCodigo[posicaoCampo] = "";
+            return
+        }
+    }
     const validarCodigoDigitado = (()=>{
         codigoCompleto.value = "";
     
