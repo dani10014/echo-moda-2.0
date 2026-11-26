@@ -49,6 +49,9 @@
                             <span>Valor</span>
                             <h5 class="preco-produto">{{ produto.preco }}</h5>
                         </div>
+                        <div class="container-btn-adicionar-carrinho">
+                            <button class="btn-adicionar-carrinho">f</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -256,6 +259,19 @@ const abrirModal = () => {
         @media (max-width: 700px) {
             flex-direction: column;
             align-items: stretch;
+        }
+        .container-btn-adicionar-carrinho{
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            @media (min-width:750px){
+                width: 50%;
+            }
+            button{
+                height: 100%;
+                width: 100%;
+            }
         }
     }
 
